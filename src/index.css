@@ -1,3 +1,8 @@
+/* Tailwind directives - keep below and then your app-specific rules */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
@@ -11,3 +16,101 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+/* Educational theme helpers */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
+
+:root{
+  --primary: theme('colors.smart-blue');
+}
+
+.edu-hero {
+  background-image: linear-gradient(180deg, rgba(79,70,229,0.06), rgba(37,99,235,0.03));
+}
+
+.card-shimmer { background-image: linear-gradient(90deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 50%, rgba(255,255,255,0.06) 100%); background-size: 200% 100%; }
+
+.logo-float { animation: float 6s ease-in-out infinite; }
+
+/* Concrete animations and card styles (works with CDN Tailwind utilities) */
+@keyframes fadeInUpLocal {
+  0% { opacity: 0; transform: translateY(12px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in-up { animation: fadeInUpLocal 420ms ease-out both; }
+
+@keyframes floatLocal { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+.float { animation: floatLocal 6s ease-in-out infinite; }
+
+.edu-gradient-bg { background: linear-gradient(180deg, rgba(99,102,241,0.06), rgba(59,130,246,0.04)); }
+
+.edu-card-accent { background: linear-gradient(90deg, #4f46e5 0%, #2563eb 50%); }
+
+.input-icon { width: 18px; height: 18px; opacity: .85; color: #9CA3AF }
+
+/* Fallbacks if Tailwind isn't loaded: ensure icons and buttons have reasonable sizing */
+.btn-fallback { padding: 0.6rem 1rem; border-radius: 0.375rem; background: #4f46e5; color: white; }
+.icon-fallback { width: 20px; height: 20px; }
+
+.edu-hero .max-w-5xl { max-width: 1100px }
+.login-card { max-width: 520px }
+.login-side { max-width: 420px }
+
+/* Decorative icon tether and bounce animations */
+.decoration-wrap { position: relative; }
+.dec-icon { position: absolute; pointer-events: none; }
+.dec-icon .tether { position: absolute; width: 2px; background: rgba(99,102,241,0.25); left: 50%; transform: translateX(-50%); }
+.dec-icon.bounce { animation: bounce 2200ms cubic-bezier(.28,.84,.42,1) infinite; }
+.dec-icon.swing { animation: swing 4200ms ease-in-out infinite; }
+.dec-icon.pulse { animation: pulse 1600ms ease-in-out infinite; }
+
+@keyframes bounce {
+  0% { transform: translateY(0) translateX(-50%); }
+  40% { transform: translateY(-10px) translateX(-50%); }
+  100% { transform: translateY(0) translateX(-50%); }
+}
+
+@keyframes swing {
+  0% { transform: translateX(-50%) rotate(-6deg); }
+  50% { transform: translateX(-50%) rotate(6deg); }
+  100% { transform: translateX(-50%) rotate(-6deg); }
+}
+
+@keyframes pulse {
+  0% { transform: translateX(-50%) scale(1); opacity: 0.95 }
+  50% { transform: translateX(-50%) scale(1.08); opacity: 1 }
+  100% { transform: translateX(-50%) scale(1); opacity: 0.95 }
+}
+
+/* Positioning helpers for icons around the login card */
+.dec-top-left { top: -18px; left: -18px; }
+.dec-top-right { top: -14px; right: -18px; }
+.dec-bottom-right { bottom: -18px; right: -14px; }
+
+
+.shimmer-line { background: linear-gradient(90deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 50%, rgba(255,255,255,0.06) 100%); background-size: 200% 100%; animation: shimmer 1.6s linear infinite; }
+
+@keyframes shimmer { 0% { background-position: -200% 0 } 100% { background-position: 200% 0 } }
+
+/* Hero background for login */
+.login-hero-bg {
+  background-image: url('https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=1600&q=60');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.login-hero-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.06));
+  pointer-events: none;
+}
+
+.login-card { max-width: 520px; transform: translateY(0); transition: transform 420ms ease; }
+.login-card:hover { transform: translateY(-6px); }
+
+
+

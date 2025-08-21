@@ -68,3 +68,19 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/d
 ### `npm run build` fails to minify
 
 This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+
+## Tailwind setup
+
+Tailwind has been added as a dev dependency. Files added/updated:
+
+- `postcss.config.cjs` — PostCSS config to load Tailwind and Autoprefixer.
+- `tailwind.config.cjs` — Tailwind config with content paths including `src` and `public`.
+- `src/index.css` — now includes Tailwind directives (`@tailwind base`, `@tailwind components`, `@tailwind utilities`).
+
+To run the app with Tailwind in development:
+
+```powershell
+npm start
+```
+
+If your editor linter reports "Unknown at rule @tailwind", that's an editor linting plugin issue; the app will build with PostCSS when you run the dev server.
