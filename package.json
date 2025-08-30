@@ -11,13 +11,17 @@
     "lucide-react": "^0.263.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-dropzone": "^14.3.8",
+    "react-hook-form": "^7.62.0",
     "react-router-dom": "^6.11.2",
     "react-scripts": "^5.0.1",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
+    "start": "concurrently -k \"npm:tw:watch\" \"react-scripts start\"",
+    "build": "npm run tw:build && react-scripts build",
+    "tw:build": "tailwindcss -c tailwind.config.cjs -i ./src/index.css -o ./src/tailwind.css",
+    "tw:watch": "tailwindcss -c tailwind.config.cjs -i ./src/index.css -o ./src/tailwind.css --watch",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
@@ -40,6 +44,9 @@
     ]
   },
   "devDependencies": {
-    "tailwindcss": "^3.3.2"
+    "autoprefixer": "^10.4.21",
+    "concurrently": "^9.2.1",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.17"
   }
 }

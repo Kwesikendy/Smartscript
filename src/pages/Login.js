@@ -1,5 +1,6 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { AuthContext } from '../context/AuthContext';
+import { useLocation, Link } from 'react-router-dom';
 
 export default function Login(){
   const [email, setEmail] = useState('');
@@ -7,6 +8,14 @@ export default function Login(){
   const { login } = useContext(AuthContext);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState('');
+  const location = useLocation();
+  const [successMessage, setSuccessMessage] = useState('');
+
+  useEffect(() => {
+    if (location.state?.message) {
+      setSuccessMessage(location.state.message);
+    }
+  }, [location]);
 
   const onSubmit = async (e) => {
     e.preventDefault();
@@ -33,6 +42,11 @@ export default function Login(){
     {/* Decorative icons removed — hero background used instead */}
 
       <form onSubmit={onSubmit} className="space-y-4">
+            {successMessage && (
+              <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-md text-sm">
+                {successMessage}
+              </div>
+            )}
             {err && <div className="text-red-600">{err}</div>}
             <div className="relative">
               <div className="absolute left-3 top-1/2 -translate-y-1/2">
@@ -52,7 +66,7 @@ export default function Login(){
           </form>
 
           <div className="mt-6 text-sm text-gray-500">
-            <div>Don't have an account? <button type="button" className="text-blue-600 underline" onClick={() => alert('Contact your admin for access')}>Contact admin</button></div>
+            <div>Don't have an account? <Link to="/signup" className="text-blue-600 underline hover:text-blue-700">Create one here</Link></div>
           </div>
         </div>
 

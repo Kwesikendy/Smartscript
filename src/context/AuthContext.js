@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, useContext } from 'react';
 import api from '../api/axios';
 import { useNavigate } from 'react-router-dom';
 
@@ -16,7 +16,14 @@ export function AuthProvider({ children }) {
 
   const login = async (email, password) => {
     const res = await api.post('/auth/login', { email, password });
-    setToken(res.data.token);
+    const tokenData = res.data.data; // Backend returns: { success: true, data: { token: "...", refresh_token: "..." } }
+    setToken(tokenData.token);
+    
+    // Store refresh token if provided
+    if (tokenData.refresh_token) {
+      localStorage.setItem('refreshToken', tokenData.refresh_token);
+    }
+    
     navigate('/dashboard');
   };
 
@@ -24,6 +31,7 @@ export function AuthProvider({ children }) {
     setToken(null);
     setUser(null);
     localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
     navigate('/login');
   };
 
@@ -32,4 +40,12 @@ export function AuthProvider({ children }) {
       {children}
     </AuthContext.Provider>
   );
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 }
