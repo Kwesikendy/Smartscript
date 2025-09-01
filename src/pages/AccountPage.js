@@ -75,14 +75,15 @@ export default function AccountPage(){
       // Verify payment on backend
       await api.post('/account/verify-payment', {
         reference: response.reference,
-        transaction: response.transaction
+        transaction: response.transaction,
+        amount: selectedPackage?.price * 100 // Convert to kobo
       });
       
       setMessage('Payment successful! Credits have been added to your account.');
       setShowCreditPackages(false);
       
-      // Refresh credits (in real implementation, get from backend)
-      setCredits(prev => prev + 100); // Mock update
+      // Refresh billing data to get updated credits
+      await fetchBillingData();
     } catch (error) {
       setError('Payment verification failed. Please contact support.');
     }
