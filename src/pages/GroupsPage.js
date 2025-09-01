@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Edit, Trash2, Search, Filter, FileText, Users } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, FileText, Users, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import DataTable from '../components/DataTable';
@@ -19,6 +19,7 @@ export default function GroupsPage() {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [deleteModal, setDeleteModal] = useState({ open: false, group: null });
+  const [formModal, setFormModal] = useState({ open: false, mode: 'create', group: null, name: '', description: '' });
   const [pagination, setPagination] = useState({
     page: 1,
     per_page: 10,
@@ -41,8 +42,16 @@ export default function GroupsPage() {
       };
 
       const response = await api.get('/groups', { params });
-      setGroups(response.data.groups || []);
-      setPagination(response.data.pagination || pagination);
+      const body = response.data;
+      if (body && body.groups) {
+        setGroups(body.groups);
+        setPagination(body.pagination || pagination);
+      } else if (body && body.data) {
+        setGroups(body.data.groups || []);
+        setPagination(body.meta || pagination);
+      } else {
+        setGroups([]);
+      }
       setError(null);
     } catch (err) {
       setError('Failed to fetch groups. Please try again.');
@@ -55,18 +64,19 @@ export default function GroupsPage() {
   const fetchStats = async () => {
     try {
       const response = await api.get('/groups/stats');
-      setStats(response.data);
+      const body = response.data;
+      setStats(body.data || body);
     } catch (err) {
       console.error('Fetch stats error:', err);
     }
   };
 
-  const handleCreateGroup = () => {
-    navigate('/groups/new');
+  const handleOpenCreate = () => {
+    setFormModal({ open: true, mode: 'create', group: null, name: '', description: '' });
   };
 
-  const handleEditGroup = (group) => {
-    navigate(`/groups/${group.id}/edit`);
+  const handleOpenEdit = (group) => {
+    setFormModal({ open: true, mode: 'edit', group, name: group.name, description: group.description || '' });
   };
 
   const handleDeleteGroup = async (group) => {
@@ -83,6 +93,30 @@ export default function GroupsPage() {
 
   const handleViewGroup = (group) => {
     navigate(`/groups/${group.id}`);
+  };
+
+  const handleSubmitGroup = async (e) => {
+    e.preventDefault();
+    try {
+      const payload = { name: formModal.name.trim(), description: formModal.description.trim() };
+      if (!payload.name) {
+        setError('Group name is required.');
+        return;
+      }
+      if (formModal.mode === 'create') {
+        await api.post('/groups', payload);
+      } else if (formModal.mode === 'edit' && formModal.group) {
+        await api.put(`/groups/${formModal.group.id}`, payload);
+      }
+      setFormModal({ open: false, mode: 'create', group: null, name: '', description: '' });
+      await fetchGroups();
+      await fetchStats();
+      setError(null);
+    } catch (err) {
+      const msg = err.response?.data?.error?.message || err.response?.data?.message || 'Failed to save group.';
+      setError(msg);
+      console.error('Save group error:', err);
+    }
   };
 
   const formatDate = (dateString) => {
@@ -149,7 +183,7 @@ export default function GroupsPage() {
             <FileText className="h-4 w-4" />
           </button>
           <button
-            onClick={() => handleEditGroup(row)}
+            onClick={() => handleOpenEdit(row)}
             className="text-yellow-600 hover:text-yellow-900 p-1 rounded-full hover:bg-yellow-50"
             title="Edit Group"
           >
@@ -193,7 +227,7 @@ export default function GroupsPage() {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
-              onClick={handleCreateGroup}
+              onClick={handleOpenCreate}
               className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200"
             >
               <Plus className="-ml-1 mr-2 h-5 w-5" />
@@ -332,6 +366,45 @@ export default function GroupsPage() {
             </button>
           </div>
         </div>
+      </Modal>
+
+      {/* Group Form Modal */}
+      <Modal
+        isOpen={formModal.open}
+        onClose={() => setFormModal({ open: false, mode: 'create', group: null, name: '', description: '' })}
+        title={formModal.mode === 'create' ? 'New Group' : 'Edit Group'}
+      >
+        <form onSubmit={handleSubmitGroup} className="p-6 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
+            <input
+              type="text"
+              value={formModal.name}
+              onChange={(e) => setFormModal(prev => ({ ...prev, name: e.target.value }))}
+              className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              placeholder="e.g. Mathematics 2025"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+            <textarea
+              value={formModal.description}
+              onChange={(e) => setFormModal(prev => ({ ...prev, description: e.target.value }))}
+              rows={3}
+              className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              placeholder="Optional description"
+            />
+          </div>
+          <div className="sm:flex sm:flex-row-reverse sm:space-x-3 sm:space-x-reverse pt-2">
+            <button type="submit" className="w-full sm:w-auto inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:text-sm">
+              {formModal.mode === 'create' ? 'Create' : 'Save changes'}
+            </button>
+            <button type="button" onClick={() => setFormModal({ open: false, mode: 'create', group: null, name: '', description: '' })} className="mt-3 w-full sm:w-auto inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:text-sm">
+              Cancel
+            </button>
+          </div>
+        </form>
       </Modal>
     </div>
   );

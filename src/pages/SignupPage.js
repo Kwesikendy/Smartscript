@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { User, Mail, Lock } from 'lucide-react';
 import api from '../api/axios';
 
@@ -11,9 +11,20 @@ export default function SignupPage() {
     password: '',
     confirmPassword: ''
   });
+  const [plan, setPlan] = useState('starter');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    // Accept plan from ?plan= or from localStorage set by Pricing actions
+    const params = new URLSearchParams(location.search);
+    const qPlan = params.get('plan');
+    const saved = localStorage.getItem('selectedPlan');
+    if (qPlan) setPlan(qPlan);
+    else if (saved) setPlan(saved);
+  }, [location.search]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -59,7 +70,8 @@ export default function SignupPage() {
         first_name: formData.firstName,
         last_name: formData.lastName,
         email: formData.email,
-        password: formData.password
+        password: formData.password,
+        plan: plan
       });
 
       // Registration successful - redirect to login
@@ -92,6 +104,17 @@ export default function SignupPage() {
                 {error}
               </div>
             )}
+
+            <div>
+              <label className="text-sm text-gray-600">Plan</label>
+              <select value={plan} onChange={e=>setPlan(e.target.value)} className="mt-1 w-full border rounded-md p-3">
+                <option value="starter">Starter</option>
+                <option value="pro">Pro</option>
+                <option value="institutional">Institutional (SaaS)</option>
+                <option value="onprem">On-Premise</option>
+              </select>
+              <p className="text-xs text-gray-500 mt-1">You can change or upgrade later.</p>
+            </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="relative">

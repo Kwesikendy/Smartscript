@@ -25,7 +25,7 @@ export default function PricingPage(){
           <h1 className="text-4xl sm:text-5xl font-bold text-gray-900">SmartScript — Pricing (GHS ₵)</h1>
           <p className="mt-4 text-gray-700 max-w-3xl mx-auto">Simple, transparent plans for tutors, schools, and exam authorities. Uploads are free; OCR and AI marking consume scripts.</p>
           <div className="mt-6 flex items-center justify-center gap-3">
-            <Link to="/signup" className="inline-flex items-center gap-2 rounded-md bg-smart-indigo px-5 py-3 text-white shadow hover:bg-indigo-700 transition">
+            <Link to="/signup?plan=starter" onClick={() => localStorage.setItem('selectedPlan','starter')} className="inline-flex items-center gap-2 rounded-md bg-smart-indigo px-5 py-3 text-white shadow hover:bg-indigo-700 transition">
               Try free — 5 scripts
             </Link>
             <a href="#compare" className="inline-flex items-center gap-2 rounded-md border border-gray-300 px-5 py-3 text-gray-700 hover:bg-gray-50 transition">Compare plans</a>
@@ -48,7 +48,7 @@ export default function PricingPage(){
               'No exports during trial',
               'Uploads are free; scripts consumed by OCR/marking',
             ]}
-            cta={{ label: 'Try Free', to: '/signup' }}
+            cta={{ label: 'Try Free', to: '/signup?plan=starter', plan: 'starter' }}
           />
 
           <PlanCard
@@ -65,7 +65,7 @@ export default function PricingPage(){
               'Email support',
               'Extra scripts: ₵1.00 / script',
             ]}
-            cta={{ label: 'Choose Starter', to: '/signup' }}
+            cta={{ label: 'Choose Starter', to: '/signup?plan=starter', plan: 'starter' }}
           />
 
           <PlanCard
@@ -84,7 +84,7 @@ export default function PricingPage(){
               'Team seats (multiple users)',
               'Extra scripts: ₵0.80 / script',
             ]}
-            cta={{ label: 'Go Pro', to: '/signup' }}
+            cta={{ label: 'Go Pro', to: '/signup?plan=pro', plan: 'pro' }}
           />
 
           <PlanCard
@@ -214,7 +214,7 @@ export default function PricingPage(){
       <section className="py-14">
         <div className="mx-auto max-w-4xl text-center px-6">
           <div className="flex items-center justify-center gap-3 flex-wrap">
-            <Link to="/signup" className="inline-flex items-center gap-2 rounded-md bg-smart-blue px-6 py-3 text-white shadow hover:bg-blue-700 transition">Try Free</Link>
+            <Link to="/signup?plan=starter" onClick={() => localStorage.setItem('selectedPlan','starter')} className="inline-flex items-center gap-2 rounded-md bg-smart-blue px-6 py-3 text-white shadow hover:bg-blue-700 transition">Try Free</Link>
             <a href="#compare" className="inline-flex items-center gap-2 rounded-md border border-gray-300 px-6 py-3 text-gray-800 hover:bg-gray-50 transition">Compare Plans</a>
             <a href="#contact" className="inline-flex items-center gap-2 rounded-md bg-gray-900 text-white px-6 py-3 hover:bg-black transition">Contact Sales</a>
           </div>
@@ -261,9 +261,9 @@ function PlanCard({ icon: Icon, color, name, price, desc, bullets = [], cta, pro
           <li key={i} className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> {b}</li>
         ))}
       </ul>
-      {cta && (
+    {cta && (
         <div className="mt-auto pt-4">
-          <Link to={cta.to} className="inline-flex items-center gap-2 rounded-md bg-gray-900 text-white px-5 py-3 hover:bg-black transition w-full justify-center">{cta.label}</Link>
+      <Link to={cta.to} onClick={() => { if (cta.plan) localStorage.setItem('selectedPlan', cta.plan); }} className="inline-flex items-center gap-2 rounded-md bg-gray-900 text-white px-5 py-3 hover:bg-black transition w-full justify-center">{cta.label}</Link>
         </div>
       )}
     </div>
