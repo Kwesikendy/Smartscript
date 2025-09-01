@@ -10,18 +10,22 @@ import {
   FileText,
   Users,
   Menu,
-  X
+  X,
+  Bell,
+  User as UserIcon,
 } from 'lucide-react';
 
 export default function NavBar(){
   const { logout } = useContext(AuthContext);
+  const { user } = useContext(AuthContext);
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
     { name: 'Uploads', href: '/uploads', icon: Upload },
-    { name: 'Validation', href: '/validation', icon: AlertTriangle },
+  { name: 'Anomalies', href: '/anomalies', icon: AlertTriangle },
     { name: 'Marking', href: '/marking', icon: Cpu },
     { name: 'Results', href: '/results', icon: BarChart3 },
     { name: 'Schemes', href: '/schemes', icon: FileText },
@@ -65,12 +69,31 @@ export default function NavBar(){
 
           {/* Right side - Desktop */}
           <div className="hidden md:flex md:items-center md:space-x-4">
-            <button
-              onClick={logout}
-              className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
-            >
-              Logout
-            </button>
+            <div className="flex items-center space-x-4">
+              <button className="relative p-2 rounded-md text-gray-600 hover:text-indigo-600 hover:bg-gray-50">
+                <Bell className="w-5 h-5" />
+                {/* small unread badge placeholder */}
+                <span className="absolute -top-0.5 -right-0.5 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white bg-red-600 rounded-full">3</span>
+              </button>
+
+              <div className="flex items-center space-x-3">
+                <div className="text-sm text-gray-700">
+                  <div className="font-medium">{user ? `${user.first_name} ${user.last_name}` : 'User'}</div>
+                  <div className="text-xs text-gray-500">Credits: {user && user.credits ? user.credits : 0}</div>
+                </div>
+                <div className="relative">
+                  <button onClick={() => setIsUserMenuOpen(!isUserMenuOpen)} className="p-2 rounded-full bg-gray-100 hover:bg-gray-200">
+                    <UserIcon className="w-6 h-6 text-gray-600" />
+                  </button>
+                  {isUserMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-100 rounded-md shadow-lg py-1 z-20">
+                      <Link to="/account" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Account</Link>
+                      <button onClick={logout} className="w-full text-left block px-4 py-2 text-sm text-red-600 hover:bg-red-50">Logout</button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Mobile menu button */}

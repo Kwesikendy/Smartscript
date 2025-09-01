@@ -56,7 +56,8 @@ export default function SignupPage() {
     try {
       setLoading(true);
       const response = await api.post('/auth/register', {
-        name: `${formData.firstName} ${formData.lastName}`.trim(),
+        first_name: formData.firstName,
+        last_name: formData.lastName,
         email: formData.email,
         password: formData.password
       });

@@ -5,8 +5,6 @@ import {
   Upload, 
   FileText, 
   Users, 
-  Quote, 
-  Sparkles,
   BookOpen,
   Target,
   Award,
@@ -14,34 +12,10 @@ import {
   BarChart3,
   Settings
 } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
-import StatsCard, { UploadsStatsCard, CandidatesStatsCard, MarkedStatsCard } from '../components/StatsCard';
+import { UploadsStatsCard, CandidatesStatsCard, MarkedStatsCard } from '../components/StatsCard';
 import LoadingOverlay from '../components/LoadingOverlay';
 import Alert from '../components/Alert';
 import api from '../api/axios';
-
-const educationalQuotes = [
-  {
-    quote: "Education is the passport to the future, for tomorrow belongs to those who prepare for it today.",
-    author: "Malcolm X"
-  },
-  {
-    quote: "The beautiful thing about learning is that no one can take it away from you.",
-    author: "B.B. King"
-  },
-  {
-    quote: "Education is not the filling of a pail, but the lighting of a fire.",
-    author: "William Butler Yeats"
-  },
-  {
-    quote: "The roots of education are bitter, but the fruit is sweet.",
-    author: "Aristotle"
-  },
-  {
-    quote: "An investment in knowledge pays the best interest.",
-    author: "Benjamin Franklin"
-  }
-];
 
 const DashboardCard = ({ icon: Icon, title, description, to, color, delay, onClick }) => (
   <motion.div
@@ -95,20 +69,12 @@ const DashboardCard = ({ icon: Icon, title, description, to, color, delay, onCli
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const [currentQuote, setCurrentQuote] = useState(0);
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentQuote((prev) => (prev + 1) % educationalQuotes.length);
-    }, 5000);
-    
-    fetchDashboardStats();
-    
-    return () => clearInterval(interval);
+  fetchDashboardStats();
   }, []);
 
   const fetchDashboardStats = async () => {
@@ -135,43 +101,11 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       <LoadingOverlay isLoading={loading} />
-      
-      {/* Hero Section */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 to-purple-600/10" />
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-center"
-          >
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="inline-flex items-center space-x-2 bg-white/80 backdrop-blur-sm rounded-full px-4 py-2 mb-6"
-            >
-              <Sparkles className="w-5 h-5 text-yellow-500" />
-              <span className="text-sm font-medium text-gray-700">AI-Powered Academic Excellence</span>
-            </motion.div>
 
-            <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
-              Welcome to{' '}
-              <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Smartscript
-              </span>
-            </h1>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-8">
-              Transform your grading workflow with AI-powered marking. Organize scripts by groups, 
-              create marking schemes, and discover insights that elevate education.
-            </p>
-            {user && (
-              <p className="text-lg text-gray-700 mb-4">
-                Welcome back, <span className="font-semibold">{user.name}</span>!
-              </p>
-            )}
-          </motion.div>
+      {/* Page Header */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-2">
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl md:text-2xl font-semibold text-gray-900">Overview</h1>
         </div>
       </div>
 
@@ -187,24 +121,39 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Quote Section */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <motion.div
-          key={currentQuote}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
-          transition={{ duration: 0.5 }}
-          className="text-center"
-        >
-          <Quote className="w-8 h-8 text-blue-500 mx-auto mb-4" />
-          <blockquote className="text-2xl font-light text-gray-700 italic mb-4">
-            "{educationalQuotes[currentQuote].quote}"
-          </blockquote>
-          <cite className="text-lg font-medium text-gray-600">
-            — {educationalQuotes[currentQuote].author}
-          </cite>
-        </motion.div>
+      {/* Quick Actions Toolbar */}
+  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-2">
+        <div className="bg-white/80 backdrop-blur-sm border border-gray-100 shadow-sm rounded-2xl p-4 md:p-6">
+          <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3 md:gap-4">
+            <button
+              onClick={() => navigate('/uploads')}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition"
+            >
+              <Upload className="w-4 h-4" /> Upload Scripts
+            </button>
+            <button
+              onClick={() => navigate('/groups')}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 transition"
+            >
+              <Users className="w-4 h-4" /> New Group
+            </button>
+            <button
+              onClick={() => navigate('/schemes')}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition"
+            >
+              <FileText className="w-4 h-4" /> New Scheme
+            </button>
+            <div className="flex-1" />
+            <div className="flex items-center gap-2">
+              <div className="hidden md:block text-sm text-gray-600">Shortcuts:</div>
+              <div className="flex flex-wrap gap-2">
+                <span className="px-2.5 py-1 text-xs rounded-md bg-gray-100 text-gray-700">U to Upload</span>
+                <span className="px-2.5 py-1 text-xs rounded-md bg-gray-100 text-gray-700">G for Groups</span>
+                <span className="px-2.5 py-1 text-xs rounded-md bg-gray-100 text-gray-700">S for Schemes</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Stats Section */}
@@ -229,6 +178,34 @@ export default function Dashboard() {
             change={stats.progress_change}
           />
         </motion.div>
+
+        {/* System Status */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+          <div className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm">
+            <div className="flex items-center gap-3 mb-2">
+              <Award className="w-5 h-5 text-green-600" />
+              <h3 className="font-semibold text-gray-800">Marking Accuracy</h3>
+            </div>
+            <p className="text-2xl font-bold text-gray-900">{stats.accuracy ?? 98}%</p>
+            <p className="text-sm text-gray-500">Last 7 days</p>
+          </div>
+          <div className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm">
+            <div className="flex items-center gap-3 mb-2">
+              <Target className="w-5 h-5 text-blue-600" />
+              <h3 className="font-semibold text-gray-800">Processing Queue</h3>
+            </div>
+            <p className="text-2xl font-bold text-gray-900">{stats.queue_size ?? 0}</p>
+            <p className="text-sm text-gray-500">Jobs awaiting action</p>
+          </div>
+          <div className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm">
+            <div className="flex items-center gap-3 mb-2">
+              <BookOpen className="w-5 h-5 text-indigo-600" />
+              <h3 className="font-semibold text-gray-800">Active Exams</h3>
+            </div>
+            <p className="text-2xl font-bold text-gray-900">{stats.active_exams ?? 0}</p>
+            <p className="text-sm text-gray-500">Currently in progress</p>
+          </div>
+        </div>
 
         {/* Quick Actions Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -335,36 +312,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Footer CTA */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.4 }}
-          className="text-center"
-        >
-          <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-8 text-white">
-            <h2 className="text-3xl font-bold mb-4">Ready to Transform Your Grading?</h2>
-            <p className="text-blue-100 mb-6 max-w-2xl mx-auto">
-              Join thousands of educators who have revolutionized their assessment process with Smartscript's AI-powered platform.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button
-                onClick={() => navigate('/uploads/new')}
-                className="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
-              >
-                Upload Scripts Now
-              </button>
-              <button
-                onClick={() => navigate('/groups/new')}
-                className="border-2 border-white text-white px-6 py-3 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors"
-              >
-                Create Your First Group
-              </button>
-            </div>
-          </div>
-        </motion.div>
-      </div>
+  {/* Removed non-dashboard CTA section */}
     </div>
   );
 }
