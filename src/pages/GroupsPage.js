@@ -19,7 +19,7 @@ export default function GroupsPage() {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [deleteModal, setDeleteModal] = useState({ open: false, group: null });
-  const [formModal, setFormModal] = useState({ open: false, mode: 'create', group: null, name: '', description: '' });
+  const [formModal, setFormModal] = useState({ open: false, mode: 'create', group: null, name: '', description: '', has_math: false });
   const [pagination, setPagination] = useState({
     page: 1,
     per_page: 10,
@@ -72,11 +72,11 @@ export default function GroupsPage() {
   };
 
   const handleOpenCreate = () => {
-    setFormModal({ open: true, mode: 'create', group: null, name: '', description: '' });
+    setFormModal({ open: true, mode: 'create', group: null, name: '', description: '', has_math: false });
   };
 
   const handleOpenEdit = (group) => {
-    setFormModal({ open: true, mode: 'edit', group, name: group.name, description: group.description || '' });
+    setFormModal({ open: true, mode: 'edit', group, name: group.name, description: group.description || '', has_math: !!group.has_math });
   };
 
   const handleDeleteGroup = async (group) => {
@@ -98,7 +98,7 @@ export default function GroupsPage() {
   const handleSubmitGroup = async (e) => {
     e.preventDefault();
     try {
-      const payload = { name: formModal.name.trim(), description: formModal.description.trim() };
+  const payload = { name: formModal.name.trim(), description: formModal.description.trim(), has_math: !!formModal.has_math };
       if (!payload.name) {
         setError('Group name is required.');
         return;
@@ -108,7 +108,7 @@ export default function GroupsPage() {
       } else if (formModal.mode === 'edit' && formModal.group) {
         await api.put(`/groups/${formModal.group.id}`, payload);
       }
-      setFormModal({ open: false, mode: 'create', group: null, name: '', description: '' });
+  setFormModal({ open: false, mode: 'create', group: null, name: '', description: '', has_math: false });
       await fetchGroups();
       await fetchStats();
       setError(null);
@@ -144,6 +144,16 @@ export default function GroupsPage() {
             <div className="text-sm text-gray-500">{row.description || 'No description'}</div>
           </div>
         </div>
+      )
+    },
+    {
+      key: 'has_math',
+      title: 'Has Math',
+      sortable: false,
+      render: (value) => (
+        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${value ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-700'}`}>
+          {value ? 'Yes' : 'No'}
+        </span>
       )
     },
     {
@@ -371,7 +381,7 @@ export default function GroupsPage() {
       {/* Group Form Modal */}
       <Modal
         isOpen={formModal.open}
-        onClose={() => setFormModal({ open: false, mode: 'create', group: null, name: '', description: '' })}
+  onClose={() => setFormModal({ open: false, mode: 'create', group: null, name: '', description: '', has_math: false })}
         title={formModal.mode === 'create' ? 'New Group' : 'Edit Group'}
       >
         <form onSubmit={handleSubmitGroup} className="p-6 space-y-4">
@@ -396,11 +406,23 @@ export default function GroupsPage() {
               placeholder="Optional description"
             />
           </div>
+          <div className="flex items-center">
+            <input
+              id="has_math"
+              type="checkbox"
+              checked={!!formModal.has_math}
+              onChange={(e) => setFormModal(prev => ({ ...prev, has_math: e.target.checked }))}
+              className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+            />
+            <label htmlFor="has_math" className="ml-2 block text-sm text-gray-700">
+              This group contains mathematics content
+            </label>
+          </div>
           <div className="sm:flex sm:flex-row-reverse sm:space-x-3 sm:space-x-reverse pt-2">
             <button type="submit" className="w-full sm:w-auto inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:text-sm">
               {formModal.mode === 'create' ? 'Create' : 'Save changes'}
             </button>
-            <button type="button" onClick={() => setFormModal({ open: false, mode: 'create', group: null, name: '', description: '' })} className="mt-3 w-full sm:w-auto inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:text-sm">
+            <button type="button" onClick={() => setFormModal({ open: false, mode: 'create', group: null, name: '', description: '', has_math: false })} className="mt-3 w-full sm:w-auto inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:text-sm">
               Cancel
             </button>
           </div>

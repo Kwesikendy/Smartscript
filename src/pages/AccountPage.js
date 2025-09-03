@@ -1,10 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import api from '../api/axios';
 import { Link } from 'react-router-dom';
 import PaystackPayment from '../components/PaystackPayment';
 import { CreditCard, Coins } from 'lucide-react';
+import { AuthContext } from '../context/AuthContext';
 
 export default function AccountPage(){
+  const { user, setUser } = useContext(AuthContext);
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState(null);
   const [billing, setBilling] = useState(null);
@@ -15,6 +17,7 @@ export default function AccountPage(){
   const [error, setError] = useState('');
   const [credits, setCredits] = useState(0);
   const [showCreditPackages, setShowCreditPackages] = useState(false);
+  const [changingPlan, setChangingPlan] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -28,8 +31,8 @@ export default function AccountPage(){
         setFirstName(p.data.data.first_name || '');
         setLastName(p.data.data.last_name || '');
         
-        // TODO: Get credits from backend - for now using mock data
-        setCredits(25); // Mock credit balance
+        // Set credits from billing data
+        setCredits(b.data.data.credits || 0);
       } catch (e){
         setError(e?.response?.data?.error?.message || 'Failed to load account');
       } finally {
@@ -55,6 +58,36 @@ export default function AccountPage(){
     }
   };
 
+  const fetchBillingData = async () => {
+    try {
+      const response = await api.get('/account/billing');
+      setBilling(response.data.data);
+      setCredits(response.data.data.credits || 0);
+      
+  // Update user context credits/plan immediately to refresh navbar
+  setUser(prev => prev ? { ...prev, credits: response.data.data.credits || 0, plan: response.data.data.plan } : prev);
+    } catch (e) {
+      console.error('Failed to fetch billing data:', e);
+    }
+  };
+
+  const changePlan = async (plan) => {
+    setChangingPlan(true);
+    setMessage('');
+    setError('');
+    try {
+      const res = await api.post('/account/change-plan', { plan });
+      setBilling(res.data.data);
+      setCredits(res.data.data.credits || 0);
+      setMessage(`Plan changed to ${res.data.data.plan.toUpperCase()}. Credits converted.`);
+      await fetchBillingData();
+    } catch (e) {
+      setError(e?.response?.data?.error?.message || 'Failed to change plan');
+    } finally {
+      setChangingPlan(false);
+    }
+  };
+
   const planBadge = () => {
     if (!billing) return null;
     const base = 'inline-flex items-center px-2 py-1 rounded text-xs font-medium';
@@ -63,28 +96,52 @@ export default function AccountPage(){
     return <span className={`${base} ${color}`}>{label}</span>;
   };
 
-  const creditPackages = [
-    { credits: 50, price: 25, popular: false },
-    { credits: 100, price: 45, popular: true },
-    { credits: 250, price: 100, popular: false },
-    { credits: 500, price: 180, popular: false }
-  ];
+  // Dynamic package pricing based on plan
+  // Assumption: per-credit price scales up with package size as requested.
+  // Starter per-credit: 50->1.00, 100->0.90, 250->0.80, 500->0.70 (decreasing)
+  // Pro per-credit:     50->1.30, 100->1.20, 250->1.10, 500->1.00 (decreasing)
+  const getPerCreditPrice = (plan, credits) => {
+    const p = plan === 'pro' ? 'pro' : 'starter';
+    const table = {
+      starter: { 50: 1.0, 100: 0.9, 250: 0.8, 500: 0.7 },
+      pro: { 50: 1.3, 100: 1.2, 250: 1.1, 500: 1.0 },
+    };
+    return table[p][credits] || table[p][50];
+  };
+
+  const computePackagePrice = (plan, credits) => {
+    const unit = getPerCreditPrice(plan, credits);
+    // Round to 2 decimals for display
+    return Math.round(credits * unit * 100) / 100;
+  };
+
+  const creditPackages = [50, 100, 250, 500].map((c, idx) => ({
+    credits: c,
+    // Compute price by plan; if billing not loaded yet, assume starter
+    price: computePackagePrice(billing?.plan || 'starter', c),
+    unit: getPerCreditPrice(billing?.plan || 'starter', c),
+    popular: c === 100,
+  }));
 
   const handlePaymentSuccess = async (response) => {
     try {
       // Verify payment on backend
-      await api.post('/account/verify-payment', {
-        reference: response.reference,
-        transaction: response.transaction,
-        amount: selectedPackage?.price * 100 // Convert to kobo
+      const verifyResponse = await api.post('/account/verify-payment', {
+        reference: response.reference
       });
       
-      setMessage('Payment successful! Credits have been added to your account.');
-      setShowCreditPackages(false);
-      
-      // Refresh billing data to get updated credits
-      await fetchBillingData();
+      if (verifyResponse.data.success) {
+        const creditsAdded = verifyResponse.data.data.credits_added;
+        setMessage(`Payment successful! ${creditsAdded} credits have been added to your account.`);
+        setShowCreditPackages(false);
+        
+        // Refresh billing data to get updated credits
+        await fetchBillingData();
+      } else {
+        setError('Payment verification failed. Please contact support.');
+      }
     } catch (error) {
+      console.error('Payment verification error:', error);
       setError('Payment verification failed. Please contact support.');
     }
   };
@@ -163,6 +220,23 @@ export default function AccountPage(){
                 <div className="text-gray-600">You’re a seat under organization <code className="px-1 py-0.5 bg-gray-100 rounded">{billing.parent_tenant_id}</code></div>
               ) : null}
               {!billing.on_prem && (
+                <div className="flex gap-2 pt-2">
+                  {billing.plan !== 'pro' ? (
+                    <button
+                      disabled={changingPlan}
+                      onClick={() => changePlan('pro')}
+                      className="inline-flex items-center justify-center px-4 py-2 rounded-md text-white bg-fuchsia-600 hover:bg-fuchsia-700 disabled:opacity-50"
+                    >{changingPlan ? 'Upgrading…' : 'Upgrade to Pro'}</button>
+                  ) : (
+                    <button
+                      disabled={changingPlan}
+                      onClick={() => changePlan('starter')}
+                      className="inline-flex items-center justify-center px-4 py-2 rounded-md text-gray-700 border border-gray-300 hover:bg-gray-50 disabled:opacity-50"
+                    >{changingPlan ? 'Switching…' : 'Switch to Starter'}</button>
+                  )}
+                </div>
+              )}
+              {!billing.on_prem && (
                 <div className="pt-2">
                   <Link to="/pricing" className="inline-flex items-center justify-center px-4 py-2 rounded-md border border-gray-300 hover:bg-gray-50">View plans</Link>
                 </div>
@@ -205,17 +279,17 @@ export default function AccountPage(){
                       <div className="text-2xl font-bold text-gray-900">{pkg.credits}</div>
                       <div className="text-sm text-gray-600">Credits</div>
                       <div className="mt-2 text-lg font-semibold text-green-600">₵{pkg.price}</div>
-                      <div className="text-xs text-gray-500">₵{(pkg.price / pkg.credits).toFixed(2)} per credit</div>
+                      <div className="text-xs text-gray-500">₵{pkg.unit.toFixed(2)} per credit</div>
                     </div>
                     
                     <PaystackPayment
-                      email={profile?.email || ''}
                       amount={pkg.price}
-                      reference={`credit_${Date.now()}_${pkg.credits}`}
+                      credits={pkg.credits}
                       metadata={{
-                        credits: pkg.credits,
                         package_type: 'credits',
-                        user_id: profile?.user_id
+                        user_id: profile?.user_id,
+                        plan: billing?.plan || 'starter',
+                        unit_price: pkg.unit,
                       }}
                       onSuccess={handlePaymentSuccess}
                       onClose={handlePaymentClose}
