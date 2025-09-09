@@ -4,15 +4,10 @@ import { motion } from 'framer-motion';
 import { 
   Upload, 
   FileText, 
-  Users, 
-  BookOpen,
-  Target,
-  Award,
-  CheckSquare,
-  BarChart3,
-  Settings
+  Users,
+  CheckSquare
 } from 'lucide-react';
-import { UploadsStatsCard, CandidatesStatsCard, MarkedStatsCard } from '../components/StatsCard';
+import StatsCard, { UploadsStatsCard, CandidatesStatsCard } from '../components/StatsCard';
 import LoadingOverlay from '../components/LoadingOverlay';
 import Alert from '../components/Alert';
 import api from '../api/axios';
@@ -74,7 +69,10 @@ export default function Dashboard() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-  fetchDashboardStats();
+    fetchDashboardStats();
+    // auto-refresh every 15s to keep dashboard up to date
+    const id = setInterval(fetchDashboardStats, 15000);
+    return () => clearInterval(id);
   }, []);
 
   const fetchDashboardStats = async () => {
@@ -165,47 +163,21 @@ export default function Dashboard() {
           className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12"
         >
           <UploadsStatsCard 
-            uploads={stats.total_uploads || 0}
-            change={stats.uploads_change}
+            uploads={stats.uploads || 0}
+            change={undefined}
           />
           <CandidatesStatsCard 
-            candidates={stats.total_candidates || 0}
-            change={stats.candidates_change}
+            candidates={stats.candidates || 0}
+            change={undefined}
           />
-          <MarkedStatsCard 
-            marked={stats.marked_scripts || 0}
-            total={stats.total_scripts || 0}
-            change={stats.progress_change}
+          <StatsCard
+            title="Marking Schemes"
+            value={(stats.marking_schemes || 0).toLocaleString()}
+            icon={FileText}
+            iconColor="purple"
           />
         </motion.div>
 
-        {/* System Status */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          <div className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm">
-            <div className="flex items-center gap-3 mb-2">
-              <Award className="w-5 h-5 text-green-600" />
-              <h3 className="font-semibold text-gray-800">Marking Accuracy</h3>
-            </div>
-            <p className="text-2xl font-bold text-gray-900">{stats.accuracy ?? 98}%</p>
-            <p className="text-sm text-gray-500">Last 7 days</p>
-          </div>
-          <div className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm">
-            <div className="flex items-center gap-3 mb-2">
-              <Target className="w-5 h-5 text-blue-600" />
-              <h3 className="font-semibold text-gray-800">Processing Queue</h3>
-            </div>
-            <p className="text-2xl font-bold text-gray-900">{stats.queue_size ?? 0}</p>
-            <p className="text-sm text-gray-500">Jobs awaiting action</p>
-          </div>
-          <div className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm">
-            <div className="flex items-center gap-3 mb-2">
-              <BookOpen className="w-5 h-5 text-indigo-600" />
-              <h3 className="font-semibold text-gray-800">Active Exams</h3>
-            </div>
-            <p className="text-2xl font-bold text-gray-900">{stats.active_exams ?? 0}</p>
-            <p className="text-sm text-gray-500">Currently in progress</p>
-          </div>
-        </div>
 
         {/* Quick Actions Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -237,25 +209,17 @@ export default function Dashboard() {
             icon={CheckSquare}
             title="Mark Scripts"
             description="Review and mark uploaded scripts with AI assistance and structured marking schemes."
-            onClick={() => navigate('/uploads')}
+            onClick={() => navigate('/marking')}
             color="from-green-500 to-green-600"
             delay={0.4}
           />
           <DashboardCard
-            icon={BarChart3}
+            icon={FileText}
             title="View Results"
             description="Analyze comprehensive results, export data, and gain insights into performance trends."
-            onClick={() => navigate('/uploads')}
+            onClick={() => navigate('/results')}
             color="from-yellow-500 to-yellow-600"
             delay={0.5}
-          />
-          <DashboardCard
-            icon={Settings}
-            title="Settings"
-            description="Configure your account preferences, marking criteria, and system settings."
-            to="/settings"
-            color="from-gray-500 to-gray-600"
-            delay={0.6}
           />
         </div>
       </div>
