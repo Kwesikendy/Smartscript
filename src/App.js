@@ -6,7 +6,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import UploadsPage from './pages/UploadsPage';
 import AnomaliesPage from './pages/AnomaliesPage';
-import MarkingPage from './pages/MarkingPage';
+import MarkingGroupsPage from './pages/MarkingGroupsPage';
 import ResultsPage from './pages/ResultsPage';
 import CandidateDetailPage from './pages/CandidateDetailPage';
 import SchemesPage from './pages/SchemesPage';
@@ -34,7 +34,7 @@ export default function App(){
           <Route path="/uploads/:uploadId" element={<ProtectedRoute><UploadDetailPage /></ProtectedRoute>} />
           <Route path="/uploads/group/:groupId" element={<ProtectedRoute><GroupUploadsPage /></ProtectedRoute>} />
           <Route path="/anomalies" element={<ProtectedRoute><AnomaliesPage /></ProtectedRoute>} />
-          <Route path="/marking" element={<ProtectedRoute><MarkingPage /></ProtectedRoute>} />
+          <Route path="/marking" element={<ProtectedRoute><MarkingGroupsPage /></ProtectedRoute>} />
           <Route path="/results" element={<ProtectedRoute><ResultsPage /></ProtectedRoute>} />
           <Route path="/results/:id" element={<ProtectedRoute><CandidateDetailPage /></ProtectedRoute>} />
           <Route path="/schemes" element={<ProtectedRoute><SchemesPage /></ProtectedRoute>} />
