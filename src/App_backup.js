@@ -16,8 +16,40 @@ import AccountPage from './pages/AccountPage';
 import PricingPage from './pages/PricingPage';
 import LandingPage from './pages/LandingPage';
 import SignupPage from './pages/SignupPage';
-import GroupUploadsPage from './pages/GroupUploadsPage';
-import UploadDetailPage from './pages/UploadDetailPage';
+import './App.css';'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
+import UploadsPage from './pages/UploadsPage';
+import AnomaliesPage from './pages/AnomaliesPage';
+import MarkingPage from './pages/MarkingPage';
+import ResultsPage from './pages/ResultsPage';
+import CandidateDetailPage from './pages/CandidateDetailPage';
+import SchemesPage from './pages/SchemesPage';
+import UploadScheme from './pages/UploadScheme';
+import GroupsPage from './pages/GroupsPage';
+import AccountPage from './pages/AccountPage';
+import PricingPage from './pages/PricingPage';
+import LandingPage from './pages/LandingPage';
+import SignupPage from './pages/SignupPage';
+import './App.css';{ BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
+import UploadsPage from './pages/UploadsPage';
+import AnomaliesPage from './pages/AnomaliesPage';
+import MarkingPage from './pages/MarkingPage';
+import ResultsPage from './pages/ResultsPage';
+import CandidateDetailPage from './pages/CandidateDetailPage';
+import SchemesPage from './pages/SchemesPage';
+import GroupsPage from './pages/GroupsPage';
+import AccountPage from './pages/AccountPage';
+import PricingPage from './pages/PricingPage';
+import LandingPage from './pages/LandingPage';
+import SignupPage from './pages/SignupPage';
 import './App.css';
 
 export default function App(){
@@ -31,8 +63,6 @@ export default function App(){
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/uploads" element={<ProtectedRoute><UploadsPage /></ProtectedRoute>} />
-          <Route path="/uploads/:uploadId" element={<ProtectedRoute><UploadDetailPage /></ProtectedRoute>} />
-          <Route path="/uploads/group/:groupId" element={<ProtectedRoute><GroupUploadsPage /></ProtectedRoute>} />
           <Route path="/anomalies" element={<ProtectedRoute><AnomaliesPage /></ProtectedRoute>} />
           <Route path="/marking" element={<ProtectedRoute><MarkingPage /></ProtectedRoute>} />
           <Route path="/results" element={<ProtectedRoute><ResultsPage /></ProtectedRoute>} />

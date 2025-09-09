@@ -14,14 +14,14 @@ const items = [
 
 export default function SideNav() {
   return (
-    <nav className="h-full py-4">
+    <nav className="h-full py-4 overflow-y-auto">
       <ul className="space-y-1 px-2">
         {items.map(({ name, to, icon: Icon }) => (
           <li key={name}>
             <NavLink
               to={to}
               className={({ isActive }) =>
-                `flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
+                `flex items-center gap-2 px-3 py-2.5 rounded-md text-sm transition-colors ${
                   isActive
                     ? 'bg-indigo-100 text-indigo-700'
                     : 'text-gray-700 hover:text-indigo-700 hover:bg-gray-50'

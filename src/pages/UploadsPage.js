@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Upload, Eye, Download, Filter, Search, MoreVertical } from 'lucide-react';
+import { Search, Users, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import DataTable from '../components/DataTable';
@@ -12,12 +12,11 @@ import api from '../api/axios';
 export default function UploadsPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [uploads, setUploads] = useState([]);
+  const [groups, setGroups] = useState([]);
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
   const [pagination, setPagination] = useState({
     page: 1,
     per_page: 10,
@@ -26,27 +25,34 @@ export default function UploadsPage() {
   });
 
   useEffect(() => {
-    fetchUploads();
+    fetchGroups();
     fetchStats();
-  }, [pagination.page, pagination.per_page, searchTerm, filterStatus]);
+  }, [pagination.page, pagination.per_page, searchTerm]);
 
-  const fetchUploads = async () => {
+  const fetchGroups = async () => {
     try {
       setLoading(true);
       const params = {
         page: pagination.page,
         per_page: pagination.per_page,
-        search: searchTerm,
-        status: filterStatus !== 'all' ? filterStatus : undefined
+        search: searchTerm
       };
 
-      const response = await api.get('/uploads', { params });
-      setUploads(response.data.uploads || []);
-      setPagination(response.data.pagination || pagination);
+      const response = await api.get('/groups', { params });
+      const body = response.data;
+      if (body && body.groups) {
+        setGroups(body.groups);
+        setPagination(body.pagination || pagination);
+      } else if (body && body.data) {
+        setGroups(body.data.groups || []);
+        setPagination(body.meta || pagination);
+      } else {
+        setGroups([]);
+      }
       setError(null);
     } catch (err) {
-      setError('Failed to fetch uploads. Please try again.');
-      console.error('Fetch uploads error:', err);
+      setError('Failed to fetch groups. Please try again.');
+      console.error('Fetch groups error:', err);
     } finally {
       setLoading(false);
     }
@@ -54,38 +60,16 @@ export default function UploadsPage() {
 
   const fetchStats = async () => {
     try {
-      const response = await api.get('/uploads/stats');
-      setStats(response.data);
+  const response = await api.get('/uploads/stats');
+  const body = response.data;
+  setStats(body.data || body);
     } catch (err) {
       console.error('Fetch stats error:', err);
     }
   };
 
-  const handleViewUpload = (upload) => {
-    navigate(`/uploads/${upload.id}`);
-  };
-
-  const handleStartMarking = (upload) => {
-    navigate(`/uploads/${upload.id}/mark`);
-  };
-
-  const handleExport = async (upload) => {
-    try {
-      const response = await api.get(`/uploads/${upload.id}/export`, {
-        responseType: 'blob'
-      });
-      
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `${upload.filename}_results.xlsx`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-    } catch (err) {
-      setError('Failed to export results. Please try again.');
-    }
+  const handleViewGroupUploads = (group) => {
+    navigate(`/uploads/group/${group.id}`);
   };
 
   const getStatusBadge = (status) => {
@@ -117,60 +101,34 @@ export default function UploadsPage() {
 
   const columns = [
     {
-      key: 'filename',
-      title: 'File Name',
+      key: 'name',
+      title: 'Group',
       sortable: true,
       render: (value, row) => (
         <div className="flex items-center">
           <div className="flex-shrink-0 h-10 w-10">
             <div className="h-10 w-10 rounded-lg bg-indigo-100 flex items-center justify-center">
-              <Upload className="h-5 w-5 text-indigo-600" />
+              <Users className="h-5 w-5 text-indigo-600" />
             </div>
           </div>
           <div className="ml-4">
             <div className="text-sm font-medium text-gray-900">{value}</div>
-            <div className="text-sm text-gray-500">{row.group_name}</div>
+            <div className="text-sm text-gray-500">{row.description || 'No description'}</div>
           </div>
         </div>
       )
     },
     {
-      key: 'candidate_count',
-      title: 'Candidates',
+      key: 'upload_count',
+      title: 'Uploads',
       sortable: true,
       render: (value) => (
         <span className="text-sm text-gray-900">{value || 0}</span>
       )
     },
     {
-      key: 'status',
-      title: 'Status',
-      sortable: true,
-      render: (value) => getStatusBadge(value)
-    },
-    {
-      key: 'marking_progress',
-      title: 'Progress',
-      render: (value, row) => {
-        const progress = row.marked_count && row.candidate_count 
-          ? Math.round((row.marked_count / row.candidate_count) * 100) 
-          : 0;
-        return (
-          <div className="flex items-center">
-            <div className="w-full bg-gray-200 rounded-full h-2 mr-2">
-              <div 
-                className="bg-indigo-600 h-2 rounded-full transition-all duration-300" 
-                style={{ width: `${progress}%` }}
-              ></div>
-            </div>
-            <span className="text-sm text-gray-900 whitespace-nowrap">{progress}%</span>
-          </div>
-        );
-      }
-    },
-    {
       key: 'created_at',
-      title: 'Uploaded',
+      title: 'Created',
       sortable: true,
       render: (value) => (
         <span className="text-sm text-gray-500">{formatDate(value)}</span>
@@ -182,30 +140,12 @@ export default function UploadsPage() {
       render: (value, row) => (
         <div className="flex items-center space-x-2">
           <button
-            onClick={() => handleViewUpload(row)}
+            onClick={() => handleViewGroupUploads(row)}
             className="text-indigo-600 hover:text-indigo-900 p-1 rounded-full hover:bg-indigo-50"
-            title="View Upload"
+            title="View Uploads"
           >
             <Eye className="h-4 w-4" />
           </button>
-          {row.status === 'validated' && (
-            <button
-              onClick={() => handleStartMarking(row)}
-              className="text-purple-600 hover:text-purple-900 p-1 rounded-full hover:bg-purple-50"
-              title="Start Marking"
-            >
-              <MoreVertical className="h-4 w-4" />
-            </button>
-          )}
-          {row.status === 'completed' && (
-            <button
-              onClick={() => handleExport(row)}
-              className="text-green-600 hover:text-green-900 p-1 rounded-full hover:bg-green-50"
-              title="Export Results"
-            >
-              <Download className="h-4 w-4" />
-            </button>
-          )}
         </div>
       )
     }
@@ -213,9 +153,9 @@ export default function UploadsPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <LoadingOverlay isLoading={loading && uploads.length === 0} />
+  <LoadingOverlay isLoading={loading && groups.length === 0} />
       
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <div className="container mx-auto px-4 sm:px-6 lg:px-8 2xl:max-w-6xl 3xl:max-w-7xl 4xl:max-w-[1400px] py-8">
         {/* Header */}
         <div className="md:flex md:items-center md:justify-between mb-8">
           <div className="flex-1 min-w-0">
@@ -224,26 +164,11 @@ export default function UploadsPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
             >
-              <h1 className="text-3xl font-bold text-gray-900 sm:truncate">
-                Script Uploads
-              </h1>
-              <p className="mt-2 text-gray-600">
-                Upload and manage examination scripts for marking
-              </p>
+        <h1 className="text-3xl font-bold text-gray-900 sm:truncate">Script Uploads</h1>
+        <p className="mt-2 text-gray-600">Select a group to view its uploads and add more scripts</p>
             </motion.div>
           </div>
-          <div className="mt-4 flex md:mt-0 md:ml-4">
-            <motion.button
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              onClick={() => navigate('/uploads/new')}
-              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200"
-            >
-              <Plus className="-ml-1 mr-2 h-5 w-5" />
-              New Upload
-            </motion.button>
-          </div>
+      <div className="mt-4 flex md:mt-0 md:ml-4" />
         </div>
 
         {/* Error Alert */}
@@ -278,17 +203,17 @@ export default function UploadsPage() {
           />
         </motion.div>
 
-        {/* Filters and Search */}
+        {/* Search */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.3 }}
           className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6"
         >
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Search
+                Search Groups
               </label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -296,41 +221,19 @@ export default function UploadsPage() {
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Search uploads..."
+                  placeholder="Search by group name or description..."
                   className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                 />
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Status Filter
-              </label>
-              <div className="relative">
-                <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <select
-                  value={filterStatus}
-                  onChange={(e) => setFilterStatus(e.target.value)}
-                  className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                >
-                  <option value="all">All Status</option>
-                  <option value="pending">Pending</option>
-                  <option value="processing">Processing</option>
-                  <option value="validated">Validated</option>
-                  <option value="marking">Marking</option>
-                  <option value="completed">Completed</option>
-                  <option value="error">Error</option>
-                </select>
               </div>
             </div>
             <div className="flex items-end">
               <button
                 onClick={() => {
                   setSearchTerm('');
-                  setFilterStatus('all');
                 }}
                 className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
               >
-                Clear Filters
+                Clear Search
               </button>
             </div>
           </div>
@@ -343,7 +246,7 @@ export default function UploadsPage() {
           transition={{ duration: 0.5, delay: 0.4 }}
         >
           <DataTable
-            data={uploads}
+            data={groups}
             columns={columns}
             loading={loading}
             pagination={pagination}

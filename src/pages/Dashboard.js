@@ -103,7 +103,7 @@ export default function Dashboard() {
       <LoadingOverlay isLoading={loading} />
 
       {/* Page Header */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-2">
+  <div className="container mx-auto px-4 sm:px-6 lg:px-8 2xl:max-w-6xl 3xl:max-w-7xl 4xl:max-w-[1400px] pt-4 pb-2">
         <div className="flex items-center justify-between">
           <h1 className="text-xl md:text-2xl font-semibold text-gray-900">Overview</h1>
         </div>
@@ -111,7 +111,7 @@ export default function Dashboard() {
 
       {/* Error Alert */}
       {error && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+  <div className="container mx-auto px-4 sm:px-6 lg:px-8 2xl:max-w-6xl 3xl:max-w-7xl 4xl:max-w-[1400px]">
           <Alert
             type="error"
             message={error}
@@ -122,7 +122,7 @@ export default function Dashboard() {
       )}
 
       {/* Quick Actions Toolbar */}
-  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-2">
+  <div className="container mx-auto px-4 sm:px-6 lg:px-8 2xl:max-w-6xl 3xl:max-w-7xl 4xl:max-w-[1400px] mt-2">
         <div className="bg-white/80 backdrop-blur-sm border border-gray-100 shadow-sm rounded-2xl p-4 md:p-6">
           <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3 md:gap-4">
             <button
@@ -157,7 +157,7 @@ export default function Dashboard() {
       </div>
 
       {/* Stats Section */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+  <div className="container mx-auto px-4 sm:px-6 lg:px-8 2xl:max-w-6xl 3xl:max-w-7xl 4xl:max-w-[1400px] py-12">
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -262,7 +262,7 @@ export default function Dashboard() {
 
       {/* Recent Activity Section */}
       {stats.recent_uploads && stats.recent_uploads.length > 0 && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+  <div className="container mx-auto px-4 sm:px-6 lg:px-8 2xl:max-w-6xl 3xl:max-w-7xl 4xl:max-w-[1400px] py-12">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}

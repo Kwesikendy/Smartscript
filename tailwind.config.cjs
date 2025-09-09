@@ -5,7 +5,21 @@ module.exports = {
     './src/**/*.{js,jsx,ts,tsx,html}'
   ],
   theme: {
+    container: {
+      center: true,
+      padding: {
+        DEFAULT: '1rem',
+        sm: '1.25rem',
+        lg: '2rem',
+        xl: '2.5rem',
+        '2xl': '3rem',
+      },
+    },
     extend: {
+      screens: {
+        '3xl': '1920px',
+        '4xl': '2560px',
+      },
       colors: {
         'smart-blue': '#2563eb',
         'smart-indigo': '#4f46e5',

@@ -93,7 +93,7 @@ export default function DataTable({
               ))}
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+      <tbody className="bg-white divide-y divide-gray-200">
             {data.length === 0 ? (
               <tr>
                 <td colSpan={columns.length + (columns.some(col => col.type === 'checkbox') ? 1 : 0)} className="px-6 py-12 text-center text-gray-500">
@@ -106,13 +106,13 @@ export default function DataTable({
                 </td>
               </tr>
             ) : (
-              data.map((row, index) => (
+        data.map((row, index) => (
                 <motion.tr
                   key={index}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: index * 0.05 }}
-                  className="hover:bg-gray-50 transition-colors"
+          className="hover:bg-gray-50 transition-colors"
                 >
                   {columns.some(col => col.type === 'checkbox') && (
                     <td className="px-6 py-4">
@@ -125,7 +125,8 @@ export default function DataTable({
                     </td>
                   )}
                   {columns.map((column) => (
-                    <td key={column.key} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td key={column.key} className="px-4 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-sm text-gray-900">
+                      <div className="sm:hidden text-xs text-gray-500 mb-1">{column.title}</div>
                       {column.render ? column.render(row[column.key], row, index) : row[column.key]}
                     </td>
                   ))}
@@ -138,9 +139,9 @@ export default function DataTable({
 
       {/* Pagination */}
       {pagination && (
-        <div className="bg-white px-4 py-3 border-t border-gray-200 sm:px-6">
+    <div className="bg-white px-2 sm:px-4 py-3 border-t border-gray-200">
           <div className="flex items-center justify-between">
-            <div className="flex-1 flex justify-between sm:hidden">
+      <div className="flex-1 flex justify-between sm:hidden">
               <button
                 onClick={() => onPageChange(pagination.page - 1)}
                 disabled={pagination.page <= 1}

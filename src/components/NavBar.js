@@ -36,7 +36,7 @@ export default function NavBar(){
 
   return (
     <nav className="bg-white shadow-lg border-b border-gray-100">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 2xl:max-w-6xl 3xl:max-w-7xl 4xl:max-w-[1400px]">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
             <Link to="/dashboard" className="flex-shrink-0 flex items-center">
@@ -46,7 +46,7 @@ export default function NavBar(){
             </Link>
 
             {/* Desktop Navigation */}
-            <div className="hidden md:ml-8 md:flex md:space-x-1">
+            <div className="hidden md:ml-6 lg:ml-8 md:flex md:space-x-1 lg:space-x-2">
               {navigation.map((item) => {
                 const Icon = item.icon;
                 return (
@@ -68,7 +68,7 @@ export default function NavBar(){
           </div>
 
           {/* Right side - Desktop */}
-          <div className="hidden md:flex md:items-center md:space-x-4">
+          <div className="hidden md:flex md:items-center md:space-x-3 lg:space-x-4">
             <div className="flex items-center space-x-4">
               <button className="relative p-2 rounded-md text-gray-600 hover:text-indigo-600 hover:bg-gray-50">
                 <Bell className="w-5 h-5" />
