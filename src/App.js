@@ -36,7 +36,8 @@ export default function App(){
           <Route path="/anomalies" element={<ProtectedRoute><AnomaliesPage /></ProtectedRoute>} />
           <Route path="/marking" element={<ProtectedRoute><MarkingGroupsPage /></ProtectedRoute>} />
           <Route path="/results" element={<ProtectedRoute><ResultsPage /></ProtectedRoute>} />
-          <Route path="/results/:id" element={<ProtectedRoute><CandidateDetailPage /></ProtectedRoute>} />
+          <Route path="/results/group/:groupId" element={<ProtectedRoute><ResultsPage /></ProtectedRoute>} />
+          <Route path="/results/candidates/:candidateId" element={<ProtectedRoute><CandidateDetailPage /></ProtectedRoute>} />
           <Route path="/schemes" element={<ProtectedRoute><SchemesPage /></ProtectedRoute>} />
           <Route path="/upload-scheme" element={<ProtectedRoute><UploadScheme /></ProtectedRoute>} />
           <Route path="/groups" element={<ProtectedRoute><GroupsPage /></ProtectedRoute>} />

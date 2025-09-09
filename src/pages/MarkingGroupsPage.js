@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Play, CheckCircle, Circle, Loader2, Upload, AlertTriangle, RefreshCw, ChevronRight } from 'lucide-react';
+import { Play, CheckCircle, Circle, Loader2, Upload, AlertTriangle, RefreshCw, ChevronRight, BarChart3 } from 'lucide-react';
 import LoadingOverlay from '../components/LoadingOverlay';
 import Alert from '../components/Alert';
 import api from '../api/axios';
@@ -120,6 +120,7 @@ export default function MarkingGroupsPage() {
                       <button onClick={() => startGroups([g.group_id])} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md bg-indigo-600 text-white hover:bg-indigo-700"><Play className="w-3.5 h-3.5"/> Start</button>
                       <Link to={`/uploads/group/${g.group_id}`} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md bg-white border border-gray-300 hover:bg-gray-50"><Upload className="w-3.5 h-3.5"/> Uploads <ChevronRight className="w-3 h-3"/></Link>
                       <Link to={`/anomalies/group/${g.group_id}`} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md bg-white border border-gray-300 hover:bg-gray-50"><AlertTriangle className="w-3.5 h-3.5 text-amber-600"/> Anomalies <ChevronRight className="w-3 h-3"/></Link>
+                      <Link to={`/results/group/${g.group_id}`} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md bg-white border border-gray-300 hover:bg-gray-50"><BarChart3 className="w-3.5 h-3.5 text-indigo-600"/> Results <ChevronRight className="w-3 h-3"/></Link>
                     </div>
                   </div>
                 </div>
