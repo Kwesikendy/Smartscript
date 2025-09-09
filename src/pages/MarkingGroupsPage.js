@@ -113,12 +113,13 @@ export default function MarkingGroupsPage() {
                       <span className="font-medium text-gray-900">{g.group_name}</span>
                       {statusPill(g.status)}
                       <span className="text-xs text-gray-500">Uploads: {g.uploads}</span>
-                      <span className="text-xs text-gray-500">Pages: {g.pages_done}/{g.pages_total}</span>
+                      <span className="text-xs text-gray-500">Scripts: {g.scripts_marked || 0}/{g.scripts_total || 0}</span>
+                      <span className="text-xs text-gray-400">OCR pages: {g.pages_done}/{g.pages_total}</span>
                     </div>
                     <div className="mt-2 flex flex-wrap items-center gap-2">
                       <button onClick={() => startGroups([g.group_id])} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md bg-indigo-600 text-white hover:bg-indigo-700"><Play className="w-3.5 h-3.5"/> Start</button>
-                      <Link to={`/uploads?group_id=${g.group_id}`} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md bg-white border border-gray-300 hover:bg-gray-50"><Upload className="w-3.5 h-3.5"/> Uploads <ChevronRight className="w-3 h-3"/></Link>
-                      <Link to={`/anomalies?group_id=${g.group_id}`} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md bg-white border border-gray-300 hover:bg-gray-50"><AlertTriangle className="w-3.5 h-3.5 text-amber-600"/> Anomalies <ChevronRight className="w-3 h-3"/></Link>
+                      <Link to={`/uploads/group/${g.group_id}`} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md bg-white border border-gray-300 hover:bg-gray-50"><Upload className="w-3.5 h-3.5"/> Uploads <ChevronRight className="w-3 h-3"/></Link>
+                      <Link to={`/anomalies/group/${g.group_id}`} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md bg-white border border-gray-300 hover:bg-gray-50"><AlertTriangle className="w-3.5 h-3.5 text-amber-600"/> Anomalies <ChevronRight className="w-3 h-3"/></Link>
                     </div>
                   </div>
                 </div>
