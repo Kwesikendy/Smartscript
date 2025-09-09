@@ -34,6 +34,7 @@ export default function App(){
           <Route path="/uploads/:uploadId" element={<ProtectedRoute><UploadDetailPage /></ProtectedRoute>} />
           <Route path="/uploads/group/:groupId" element={<ProtectedRoute><GroupUploadsPage /></ProtectedRoute>} />
           <Route path="/anomalies" element={<ProtectedRoute><AnomaliesPage /></ProtectedRoute>} />
+          <Route path="/anomalies/:groupId" element={<ProtectedRoute><AnomaliesPage /></ProtectedRoute>} />
           <Route path="/marking" element={<ProtectedRoute><MarkingGroupsPage /></ProtectedRoute>} />
           <Route path="/results" element={<ProtectedRoute><ResultsPage /></ProtectedRoute>} />
           <Route path="/results/group/:groupId" element={<ProtectedRoute><ResultsPage /></ProtectedRoute>} />
