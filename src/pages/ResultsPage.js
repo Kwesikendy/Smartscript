@@ -39,7 +39,7 @@ export default function ResultsPage() {
     // Group mode
     loadGroupMeta();
     loadGroupResults();
-  }, [groupId, groupsPagination.page, pagination.page, searchTerm]);
+  }, [groupId, groupsPagination.page, pagination.page, searchTerm, gradeFilter]);
 
   const loadGroups = async () => {
     try {
@@ -328,7 +328,7 @@ export default function ResultsPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Grade</label>
                   <select
                     value={gradeFilter}
-                    onChange={(e) => setGradeFilter(e.target.value)}
+                    onChange={(e) => { setGradeFilter(e.target.value); setPagination(prev => ({ ...prev, page: 1 })); }}
                     className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                   >
                     <option value="all">All</option>

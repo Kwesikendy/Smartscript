@@ -20,6 +20,7 @@ export default function GroupUploadsPage() {
   const [mode, setMode] = useState('images');
   const [files, setFiles] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     fetchGroup();
@@ -45,10 +46,26 @@ export default function GroupUploadsPage() {
       const params = { page: pagination.page, per_page: pagination.per_page, group_id: groupId };
       const res = await api.get('/uploads', { params });
       const body = res.data;
-      const rows = body.data?.uploads || body.uploads || [];
+      let rows = body.data?.uploads || body.uploads || [];
+      // client-side search by filename/mode/status
+      if (searchTerm) {
+        const q = searchTerm.toLowerCase();
+        rows = rows.filter(u => (
+          (u.original_filename || u.filename || '').toLowerCase().includes(q) ||
+          (u.mode || '').toLowerCase().includes(q) ||
+          (u.status || '').toLowerCase().includes(q)
+        ));
+      }
       const meta = body.data?.pagination || body.pagination || null;
-      setUploads(rows);
-      if (meta) setPagination(meta);
+      // if server pagination exists, keep it but adjust totals for client-side filter
+      if (meta) {
+        const total = rows.length;
+        const start = (pagination.page - 1) * pagination.per_page;
+        setUploads(rows.slice(start, start + pagination.per_page));
+        setPagination(prev => ({ ...prev, total, total_pages: Math.ceil(total / prev.per_page) }));
+      } else {
+        setUploads(rows);
+      }
       setError(null);
     } catch (e) {
       console.error('Failed to fetch uploads', e);
@@ -179,6 +196,12 @@ export default function GroupUploadsPage() {
         )}
 
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="mb-4 flex flex-wrap gap-3 items-end">
+            <div className="flex-1 min-w-[220px]">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Search uploads</label>
+              <input value={searchTerm} onChange={(e)=>{ setSearchTerm(e.target.value); setPagination(p=>({ ...p, page: 1 })); }} placeholder="Search by file, mode, or status..." className="w-full border rounded-md px-3 py-2 text-sm" />
+            </div>
+          </div>
           <DataTable
             data={uploads}
             columns={columns}

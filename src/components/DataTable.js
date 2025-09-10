@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 
@@ -14,6 +14,8 @@ export default function DataTable({
   className = ''
 }) {
   const [selectedRows, setSelectedRows] = useState(new Set());
+  const [localSortField, setLocalSortField] = useState(null);
+  const [localSortDirection, setLocalSortDirection] = useState('asc');
 
   const handleSelectAll = (checked) => {
     if (checked) {
@@ -34,12 +36,43 @@ export default function DataTable({
   };
 
   const handleSort = (field) => {
-    if (sortField === field) {
-      onSort(field, sortDirection === 'asc' ? 'desc' : 'asc');
+    const effectiveField = sortField ?? localSortField;
+    const effectiveDir = sortDirection ?? localSortDirection;
+    if (effectiveField === field) {
+      const nextDir = effectiveDir === 'asc' ? 'desc' : 'asc';
+      setLocalSortField(field);
+      setLocalSortDirection(nextDir);
+      onSort && onSort(field, nextDir);
     } else {
-      onSort(field, 'asc');
+      setLocalSortField(field);
+      setLocalSortDirection('asc');
+      onSort && onSort(field, 'asc');
     }
   };
+
+  const effectiveSortField = sortField ?? localSortField;
+  const effectiveSortDirection = sortDirection ?? localSortDirection;
+
+  const sortedData = useMemo(() => {
+    if (!effectiveSortField) return data;
+    const col = columns.find(c => c.key === effectiveSortField);
+    if (!col) return data;
+    const arr = [...data];
+    arr.sort((a, b) => {
+      const av = a[effectiveSortField];
+      const bv = b[effectiveSortField];
+      // Attempt basic type-aware compare
+      const ax = typeof av === 'string' ? av.toLowerCase() : av;
+      const bx = typeof bv === 'string' ? bv.toLowerCase() : bv;
+      if (ax == null && bx == null) return 0;
+      if (ax == null) return effectiveSortDirection === 'asc' ? -1 : 1;
+      if (bx == null) return effectiveSortDirection === 'asc' ? 1 : -1;
+      if (ax < bx) return effectiveSortDirection === 'asc' ? -1 : 1;
+      if (ax > bx) return effectiveSortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+    return arr;
+  }, [data, columns, effectiveSortField, effectiveSortDirection]);
 
   if (loading) {
     return (
@@ -83,9 +116,9 @@ export default function DataTable({
                 >
                   <div className="flex items-center space-x-1">
                     <span>{column.title}</span>
-                    {column.sortable && sortField === column.key && (
+        {column.sortable && effectiveSortField === column.key && (
                       <span className="text-indigo-600">
-                        {sortDirection === 'asc' ? '↑' : '↓'}
+      {effectiveSortDirection === 'asc' ? '↑' : '↓'}
                       </span>
                     )}
                   </div>
@@ -96,7 +129,7 @@ export default function DataTable({
       <tbody className="bg-white divide-y divide-gray-200">
             {data.length === 0 ? (
               <tr>
-                <td colSpan={columns.length + (columns.some(col => col.type === 'checkbox') ? 1 : 0)} className="px-6 py-12 text-center text-gray-500">
+    <td colSpan={columns.length + (columns.some(col => col.type === 'checkbox') ? 1 : 0)} className="px-6 py-12 text-center text-gray-500">
                   <div className="flex flex-col items-center space-y-2">
                     <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
                       <span className="text-gray-400 text-xl">📄</span>
@@ -106,7 +139,7 @@ export default function DataTable({
                 </td>
               </tr>
             ) : (
-        data.map((row, index) => (
+  sortedData.map((row, index) => (
                 <motion.tr
                   key={index}
                   initial={{ opacity: 0 }}

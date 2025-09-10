@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { Filter, RefreshCw, AlertTriangle } from 'lucide-react';
 import DataTable from '../components/DataTable';
@@ -13,6 +13,7 @@ export default function AnomaliesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [severity, setSeverity] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Group list
   const [groups, setGroups] = useState([]);
@@ -34,7 +35,7 @@ export default function AnomaliesPage() {
       loadGroupAnomalies();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [groupId, severity, groupsPagination.page, pagination.page]);
+  }, [groupId, severity, groupsPagination.page, pagination.page, searchTerm]);
 
   const loadGroups = async () => {
     try {
@@ -44,6 +45,11 @@ export default function AnomaliesPage() {
       // Apply severity filter (client-side) for group summaries
       if (severity) {
         list = list.filter(g => (g[severity] || 0) > 0);
+      }
+      // Apply search by group name (client-side)
+      if (searchTerm) {
+        const q = searchTerm.toLowerCase();
+        list = list.filter(g => (g.group_name || '').toLowerCase().includes(q));
       }
       const total = list.length;
       const start = (groupsPagination.page - 1) * groupsPagination.per_page;
@@ -60,10 +66,21 @@ export default function AnomaliesPage() {
   const loadGroupAnomalies = async () => {
     try {
       setLoading(true);
-      const res = await api.get(`/anomalies/groups/${groupId}`, { params: { page: pagination.page, per_page: pagination.per_page, severity } });
-      const items = res.data?.anomalies || [];
-      setAnomalies(items);
-      if (res.data?.pagination) setPagination(res.data.pagination);
+      const res = await api.get(`/anomalies/groups/${groupId}`, { params: { page: pagination.page, per_page: pagination.per_page, severity, search: searchTerm } });
+      const all = res.data?.anomalies || [];
+      // Client-side filter by search across common fields
+      const filtered = !searchTerm ? all : all.filter(a => {
+        const q = searchTerm.toLowerCase();
+        return (
+          (a.index_number || '').toLowerCase().includes(q) ||
+          (a.anomaly_type || '').toLowerCase().includes(q) ||
+          (a.ocr_text || '').toLowerCase().includes(q)
+        );
+      });
+      const start = (pagination.page - 1) * pagination.per_page;
+      const pageItems = filtered.slice(start, start + pagination.per_page);
+      setAnomalies(pageItems);
+      setPagination(prev => ({ ...prev, total: filtered.length, total_pages: Math.ceil(filtered.length / prev.per_page) }));
     } catch (err) {
       console.error('Failed to load anomalies', err);
       setError('Failed to load anomalies');
@@ -152,6 +169,15 @@ export default function AnomaliesPage() {
                 <option value="high">High</option>
                 <option value="critical">Critical</option>
               </select>
+            </div>
+            <div>
+              <input
+                type="text"
+                placeholder={inGroupMode ? 'Search by candidate, type, or OCR text...' : 'Search groups...'}
+                value={searchTerm}
+                onChange={(e) => { setSearchTerm(e.target.value); inGroupMode ? setPagination(p=>({ ...p, page: 1 })) : setGroupsPagination(p=>({ ...p, page: 1 })); }}
+                className="px-3 py-2 text-sm rounded-md border border-gray-300 bg-white"
+              />
             </div>
             <button onClick={() => (inGroupMode ? loadGroupAnomalies() : loadGroups())} className="inline-flex items-center gap-2 px-3 py-2 text-sm rounded-md bg-white border border-gray-300 hover:bg-gray-50">
               <RefreshCw className="w-4 h-4" /> Refresh

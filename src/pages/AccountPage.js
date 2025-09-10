@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import PaystackPayment from '../components/PaystackPayment';
 import { CreditCard, Coins } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
+import Select from 'react-select';
 
 export default function AccountPage(){
   const { user, setUser } = useContext(AuthContext);
@@ -18,6 +19,7 @@ export default function AccountPage(){
   const [credits, setCredits] = useState(0);
   const [showCreditPackages, setShowCreditPackages] = useState(false);
   const [changingPlan, setChangingPlan] = useState(false);
+  const [llmModel, setLlmModel] = useState(() => localStorage.getItem('preferredLLMModel') || '');
 
   useEffect(() => {
     const load = async () => {
@@ -85,6 +87,25 @@ export default function AccountPage(){
       setError(e?.response?.data?.error?.message || 'Failed to change plan');
     } finally {
       setChangingPlan(false);
+    }
+  };
+
+  // LLM model options from Groq, covering major makers
+  const llmOptions = [
+    { label: 'Meta - Llama 3.3 70B', value: 'llama-3.3-70b-versatile' },
+    { label: 'OpenAI - GPT-OSS 120B', value: 'openai/gpt-oss-120b' }
+  ];
+
+  const savePreferredModel = async (option) => {
+    const value = option?.value || '';
+    setLlmModel(value);
+    localStorage.setItem('preferredLLMModel', value);
+    setMessage('Preferred LLM saved');
+    // Best-effort persist to backend if supported
+    try {
+      await api.post('/account/preferences', { llm_model: value });
+    } catch (e) {
+      // ignore if endpoint not available
     }
   };
 
@@ -208,6 +229,17 @@ export default function AccountPage(){
             </div>
             <button disabled={saving} className="mt-2 inline-flex items-center justify-center px-4 py-2 rounded-md text-white bg-smart-indigo hover:opacity-90 disabled:opacity-50">{saving ? 'Saving…' : 'Save changes'}</button>
           </form>
+          <div className="mt-6">
+            <label className="text-sm text-gray-600">Preferred LLM (Groq)</label>
+            <Select
+              className="mt-1"
+              options={llmOptions}
+              value={llmOptions.find(o => o.value === llmModel) || null}
+              onChange={savePreferredModel}
+              placeholder="Select a model"
+            />
+            <p className="mt-1 text-xs text-gray-500">Used by AI marking. Covers one from Meta, Mistral, Qwen, and an OpenAI-compatible family hosted by Groq.</p>
+          </div>
         </div>
 
         <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
