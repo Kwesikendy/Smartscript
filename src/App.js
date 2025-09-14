@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import ToastProvider from './components/ToastProvider';
 import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -24,7 +25,8 @@ export default function App(){
   return (
     <BrowserRouter>
       <AuthProvider>
-        <Routes>
+        <ToastProvider>
+          <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/" element={<LandingPage />} />
@@ -43,7 +45,8 @@ export default function App(){
           <Route path="/upload-scheme" element={<ProtectedRoute><UploadScheme /></ProtectedRoute>} />
           <Route path="/groups" element={<ProtectedRoute><GroupsPage /></ProtectedRoute>} />
           <Route path="/account" element={<ProtectedRoute><AccountPage /></ProtectedRoute>} />
-        </Routes>
+          </Routes>
+        </ToastProvider>
       </AuthProvider>
     </BrowserRouter>
   );

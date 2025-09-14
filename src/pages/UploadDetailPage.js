@@ -1,13 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Eye, RefreshCcw } from 'lucide-react';
+import { ArrowLeft, Eye, RefreshCcw, Save } from 'lucide-react';
 import api from '../api/axios';
 import LoadingOverlay from '../components/LoadingOverlay';
+import LoadingSpinner from '../components/LoadingSpinner';
+import StatusBadge from '../components/StatusBadge';
 import Alert from '../components/Alert';
+import { useToast } from '../components/ToastProvider';
 
 export default function UploadDetailPage(){
   const { uploadId } = useParams();
   const navigate = useNavigate();
+  const toast = useToast();
   const [upload, setUpload] = useState(null);
   const [pages, setPages] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -15,6 +19,7 @@ export default function UploadDetailPage(){
   const [selected, setSelected] = useState(null);
   const [ocrText, setOcrText] = useState('');
   const [saving, setSaving] = useState(false);
+  const [redoingOCR, setRedoingOCR] = useState(false);
 
   useEffect(() => { fetchData(); }, [uploadId]);
 
@@ -32,7 +37,9 @@ export default function UploadDetailPage(){
       setError(null);
     }catch(e){
       console.error('Failed to fetch upload detail', e);
-      setError('Failed to load upload details.');
+      const errorMsg = 'Failed to load upload details.';
+      setError(errorMsg);
+      toast.error(errorMsg);
     }finally{
       setLoading(false);
     }
@@ -58,24 +65,32 @@ export default function UploadDetailPage(){
     if(!selected) return;
     try{
       setSaving(true);
+      toast.info('Saving OCR text...');
       await api.patch(`/pages/${selected.id}/ocr`, { ocr_text: ocrText });
+      toast.success('OCR text saved successfully');
       await fetchData();
     }catch(e){
       console.error('Save OCR failed', e);
-      setError('Failed to save OCR text.');
+      const errorMsg = 'Failed to save OCR text.';
+      setError(errorMsg);
+      toast.error(errorMsg);
     }finally{ setSaving(false); }
   }
 
   async function redoOCR(){
     if(!selected) return;
     try{
-      setSaving(true);
+      setRedoingOCR(true);
+      toast.info('Initiating OCR redo...');
       await api.post(`/pages/${selected.id}/ocr/redo`);
+      toast.success('OCR redo initiated successfully. Processing will begin shortly.');
       await fetchData();
     }catch(e){
       console.error('Redo OCR failed', e);
-      setError('Failed to redo OCR.');
-    }finally{ setSaving(false); }
+      const errorMsg = 'Failed to redo OCR.';
+      setError(errorMsg);
+      toast.error(errorMsg);
+    }finally{ setRedoingOCR(false); }
   }
 
   return (
@@ -86,9 +101,16 @@ export default function UploadDetailPage(){
           <button onClick={() => navigate(-1)} className="mr-3 text-gray-600 hover:text-gray-900">
             <ArrowLeft className="h-5 w-5" />
           </button>
-          <div>
+          <div className="flex-1">
             <h1 className="text-2xl font-bold text-gray-900">Upload Detail</h1>
             <p className="text-gray-600">View page images and OCR text, edit text or redo OCR.</p>
+            {upload && (
+              <div className="mt-2 flex items-center space-x-4">
+                <span className="text-sm text-gray-500">File: {upload.original_filename || upload.filename}</span>
+                <StatusBadge status={upload.upload_status || upload.status} type="upload" />
+                {upload.ocr_status && <StatusBadge status={upload.ocr_status} type="ocr" />}
+              </div>
+            )}
           </div>
         </div>
 
@@ -100,9 +122,14 @@ export default function UploadDetailPage(){
             <h2 className="text-sm font-semibold text-gray-700 mb-3">Pages</h2>
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3 max-h-[60vh] overflow-auto">
               {pages.map(p => (
-                <button key={p.id} onClick={() => selectPage(p)} className={`border rounded-md overflow-hidden focus:outline-none focus:ring-2 focus:ring-indigo-500 ${selected && selected.id === p.id ? 'ring-2 ring-indigo-500' : ''}`}>
-                  <img src={(p.blob_url && (/^https?:\/\//i.test(p.blob_url) ? p.blob_url : (p.blob_url.startsWith('/') ? p.blob_url : '/' + p.blob_url))) || ''} alt="page" className="w-full h-24 object-cover" />
-                </button>
+                <div key={p.id} className="relative">
+                  <button onClick={() => selectPage(p)} className={`w-full border rounded-md overflow-hidden focus:outline-none focus:ring-2 focus:ring-indigo-500 ${selected && selected.id === p.id ? 'ring-2 ring-indigo-500' : ''}`}>
+                    <img src={(p.blob_url && (/^https?:\/\//i.test(p.blob_url) ? p.blob_url : (p.blob_url.startsWith('/') ? p.blob_url : '/' + p.blob_url))) || ''} alt="page" className="w-full h-24 object-cover" />
+                  </button>
+                  <div className="absolute top-1 right-1">
+                    <StatusBadge status={p.ocr_status || 'pending'} type="ocr" className="text-xs scale-75 origin-top-right" />
+                  </div>
+                </div>
               ))}
             </div>
             {selected && (
@@ -117,11 +144,31 @@ export default function UploadDetailPage(){
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-sm font-semibold text-gray-700">OCR Text</h2>
               <div className="space-x-2">
-                <button onClick={redoOCR} disabled={!selected || saving} className="inline-flex items-center px-3 py-1.5 text-sm rounded-md border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50">
-                  <RefreshCcw className="h-4 w-4 mr-1" /> Redo OCR
+                <button onClick={redoOCR} disabled={!selected || redoingOCR || saving} className="inline-flex items-center px-3 py-1.5 text-sm rounded-md border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50">
+                  {redoingOCR ? (
+                    <>
+                      <LoadingSpinner size="small" className="mr-1" />
+                      Initiating...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCcw className="h-4 w-4 mr-1" />
+                      Redo OCR
+                    </>
+                  )}
                 </button>
-                <button onClick={saveOCR} disabled={!selected || saving} className="inline-flex items-center px-3 py-1.5 text-sm rounded-md border border-transparent text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50">
-                  Save
+                <button onClick={saveOCR} disabled={!selected || saving || redoingOCR} className="inline-flex items-center px-3 py-1.5 text-sm rounded-md border border-transparent text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50">
+                  {saving ? (
+                    <>
+                      <LoadingSpinner size="small" className="mr-1" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4 mr-1" />
+                      Save
+                    </>
+                  )}
                 </button>
               </div>
             </div>

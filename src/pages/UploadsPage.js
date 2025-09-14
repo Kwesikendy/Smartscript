@@ -1,20 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Users, Eye } from 'lucide-react';
+import { Search, Users, Eye, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import DataTable from '../components/DataTable';
 import StatsCard, { UploadsStatsCard, CandidatesStatsCard, MarkedStatsCard } from '../components/StatsCard';
 import LoadingOverlay from '../components/LoadingOverlay';
+import StatusBadge from '../components/StatusBadge';
 import Alert from '../components/Alert';
+import { useToast } from '../components/ToastProvider';
 import api from '../api/axios';
 
 export default function UploadsPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const toast = useToast();
   const [groups, setGroups] = useState([]);
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [pagination, setPagination] = useState({
@@ -29,9 +33,13 @@ export default function UploadsPage() {
     fetchStats();
   }, [pagination.page, pagination.per_page, searchTerm]);
 
-  const fetchGroups = async () => {
+  const fetchGroups = async (showLoader = true) => {
     try {
-      setLoading(true);
+      if (showLoader) {
+        setLoading(true);
+      } else {
+        setRefreshing(true);
+      }
       const params = {
         page: pagination.page,
         per_page: pagination.per_page,
@@ -51,10 +59,18 @@ export default function UploadsPage() {
       }
       setError(null);
     } catch (err) {
-      setError('Failed to fetch groups. Please try again.');
+      const errorMsg = 'Failed to fetch groups. Please try again.';
+      setError(errorMsg);
+      if (!showLoader) {
+        toast.error(errorMsg);
+      }
       console.error('Fetch groups error:', err);
     } finally {
-      setLoading(false);
+      if (showLoader) {
+        setLoading(false);
+      } else {
+        setRefreshing(false);
+      }
     }
   };
 
@@ -72,21 +88,9 @@ export default function UploadsPage() {
     navigate(`/uploads/group/${group.id}`);
   };
 
-  const getStatusBadge = (status) => {
-    const statusClasses = {
-      pending: 'bg-yellow-100 text-yellow-800',
-      processing: 'bg-blue-100 text-blue-800',
-      validated: 'bg-green-100 text-green-800',
-      marking: 'bg-purple-100 text-purple-800',
-      completed: 'bg-gray-100 text-gray-800',
-      error: 'bg-red-100 text-red-800'
-    };
-
-    return (
-      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusClasses[status] || statusClasses.pending}`}>
-        {status}
-      </span>
-    );
+  const handleRefresh = () => {
+    fetchGroups(false);
+    fetchStats();
   };
 
   const formatDate = (dateString) => {
@@ -168,7 +172,16 @@ export default function UploadsPage() {
         <p className="mt-2 text-gray-600">Select a group to view its uploads and add more scripts</p>
             </motion.div>
           </div>
-      <div className="mt-4 flex md:mt-0 md:ml-4" />
+          <div className="mt-4 flex md:mt-0 md:ml-4">
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+              {refreshing ? 'Refreshing...' : 'Refresh'}
+            </button>
+          </div>
         </div>
 
         {/* Error Alert */}
@@ -230,6 +243,7 @@ export default function UploadsPage() {
               <button
                 onClick={() => {
                   setSearchTerm('');
+                  toast.info('Search cleared');
                 }}
                 className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
               >

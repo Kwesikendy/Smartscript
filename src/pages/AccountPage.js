@@ -2,12 +2,15 @@ import React, { useEffect, useState, useContext } from 'react';
 import api from '../api/axios';
 import { Link } from 'react-router-dom';
 import PaystackPayment from '../components/PaystackPayment';
-import { CreditCard, Coins } from 'lucide-react';
+import LoadingSpinner from '../components/LoadingSpinner';
+import { CreditCard, Coins, Save } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
+import { useToast } from '../components/ToastProvider';
 import Select from 'react-select';
 
 export default function AccountPage(){
   const { user, setUser } = useContext(AuthContext);
+  const toast = useToast();
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState(null);
   const [billing, setBilling] = useState(null);
@@ -49,12 +52,17 @@ export default function AccountPage(){
     setSaving(true);
     setMessage('');
     setError('');
+    toast.info('Saving profile...');
     try {
       const res = await api.patch('/account/profile', { first_name: firstName, last_name: lastName });
       setProfile(res.data.data);
-      setMessage('Profile updated');
+      const successMsg = 'Profile updated successfully';
+      setMessage(successMsg);
+      toast.success(successMsg);
     } catch (e){
-      setError(e?.response?.data?.error?.message || 'Failed to update');
+      const errorMsg = e?.response?.data?.error?.message || 'Failed to update';
+      setError(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setSaving(false);
     }
@@ -77,14 +85,19 @@ export default function AccountPage(){
     setChangingPlan(true);
     setMessage('');
     setError('');
+    toast.info(`Changing plan to ${plan.toUpperCase()}...`);
     try {
       const res = await api.post('/account/change-plan', { plan });
       setBilling(res.data.data);
       setCredits(res.data.data.credits || 0);
-      setMessage(`Plan changed to ${res.data.data.plan.toUpperCase()}. Credits converted.`);
+      const successMsg = `Plan changed to ${res.data.data.plan.toUpperCase()}. Credits converted.`;
+      setMessage(successMsg);
+      toast.success(successMsg);
       await fetchBillingData();
     } catch (e) {
-      setError(e?.response?.data?.error?.message || 'Failed to change plan');
+      const errorMsg = e?.response?.data?.error?.message || 'Failed to change plan';
+      setError(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setChangingPlan(false);
     }
@@ -227,7 +240,19 @@ export default function AccountPage(){
               <label className="text-sm text-gray-600">Email</label>
               <input value={profile?.email || ''} disabled className="mt-1 w-full border rounded-md p-2 bg-gray-50" />
             </div>
-            <button disabled={saving} className="mt-2 inline-flex items-center justify-center px-4 py-2 rounded-md text-white bg-smart-indigo hover:opacity-90 disabled:opacity-50">{saving ? 'Saving…' : 'Save changes'}</button>
+            <button disabled={saving} className="mt-2 inline-flex items-center justify-center px-4 py-2 rounded-md text-white bg-smart-indigo hover:opacity-90 disabled:opacity-50">
+              {saving ? (
+                <>
+                  <LoadingSpinner size="small" className="mr-2" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4 mr-2" />
+                  Save changes
+                </>
+              )}
+            </button>
           </form>
           <div className="mt-6">
             <label className="text-sm text-gray-600">Preferred LLM (Groq)</label>

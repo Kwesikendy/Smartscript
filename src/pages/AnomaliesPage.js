@@ -1,16 +1,22 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
-import { Filter, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Filter, RefreshCw, AlertTriangle, Save } from 'lucide-react';
 import DataTable from '../components/DataTable';
 import LoadingOverlay from '../components/LoadingOverlay';
+import LoadingSpinner from '../components/LoadingSpinner';
+import StatusBadge from '../components/StatusBadge';
 import Alert from '../components/Alert';
+import { useToast } from '../components/ToastProvider';
 import api from '../api/axios';
 
 export default function AnomaliesPage() {
   const navigate = useNavigate();
   const { groupId } = useParams();
+  const toast = useToast();
 
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [severity, setSeverity] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
