@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Upload, UploadCloud, Loader2 } from 'lucide-react';
+import { ArrowLeft, Upload, UploadCloud, Loader2, CheckCircle2 } from 'lucide-react';
 import DataTable from '../components/DataTable';
 import LoadingOverlay from '../components/LoadingOverlay';
 import Alert from '../components/Alert';
@@ -21,6 +21,7 @@ export default function GroupUploadsPage() {
   const [files, setFiles] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const pollRef = useRef(null);
 
   useEffect(() => {
     fetchGroup();
@@ -29,6 +30,18 @@ export default function GroupUploadsPage() {
   useEffect(() => {
     fetchUploads();
   }, [groupId, pagination.page, pagination.per_page]);
+
+  useEffect(() => {
+    // Poll while there are uploads processing
+    const hasProcessing = uploads.some(u => ['pending','processing','queued'].includes((u.status||'').toLowerCase()));
+    if (hasProcessing){
+      pollRef.current && clearInterval(pollRef.current);
+      pollRef.current = setInterval(()=>{ fetchUploads(false); }, 4000);
+    } else if (pollRef.current){
+      clearInterval(pollRef.current);
+    }
+    return () => { if(pollRef.current) clearInterval(pollRef.current); };
+  }, [uploads]);
 
   const fetchGroup = async () => {
     try {
@@ -40,14 +53,13 @@ export default function GroupUploadsPage() {
     }
   };
 
-  const fetchUploads = async () => {
+  const fetchUploads = async (showLoader = true) => {
     try {
-      setLoading(true);
+      if(showLoader) setLoading(true);
       const params = { page: pagination.page, per_page: pagination.per_page, group_id: groupId };
       const res = await api.get('/uploads', { params });
       const body = res.data;
       let rows = body.data?.uploads || body.uploads || [];
-      // client-side search by filename/mode/status
       if (searchTerm) {
         const q = searchTerm.toLowerCase();
         rows = rows.filter(u => (
@@ -57,7 +69,6 @@ export default function GroupUploadsPage() {
         ));
       }
       const meta = body.data?.pagination || body.pagination || null;
-      // if server pagination exists, keep it but adjust totals for client-side filter
       if (meta) {
         const total = rows.length;
         const start = (pagination.page - 1) * pagination.per_page;
@@ -71,7 +82,7 @@ export default function GroupUploadsPage() {
       console.error('Failed to fetch uploads', e);
       setError('Failed to fetch uploads for this group.');
     } finally {
-      setLoading(false);
+      if(showLoader) setLoading(false);
     }
   };
 
@@ -105,11 +116,10 @@ export default function GroupUploadsPage() {
       // backend CreateUpload expects multipart with files[]
       for (const f of files) form.append('files', f);
   // Use group endpoint; backend will tie to the group's exam automatically
-  await api.post(`/groups/${groupId}/uploads?mode=${encodeURIComponent(mode)}`, form, {
+      await api.post(`/groups/${groupId}/uploads?mode=${encodeURIComponent(mode)}`, form, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       handleCloseUpload();
-      // refresh list
       fetchUploads();
     } catch (e) {
       console.error('Upload failed', e);
@@ -140,7 +150,19 @@ export default function GroupUploadsPage() {
         </div>
       )
     },
-    { key: 'status', title: 'Status', render: (v) => <span className="capitalize">{v}</span> },
+    { key: 'status', title: 'Status', render: (v, row) => {
+      const status = (v||'').toLowerCase();
+      if(['pending','processing','queued'].includes(status)){
+        return <span className="inline-flex items-center text-indigo-600"><Loader2 className="h-4 w-4 mr-1 animate-spin"/>Processing</span>;
+      }
+      if(status === 'completed' || status === 'done' || status === 'success'){
+        return <span className="inline-flex items-center text-green-600"><CheckCircle2 className="h-4 w-4 mr-1"/>Done</span>;
+      }
+      if(status === 'failed' || status === 'error'){
+        return <span className="text-red-600">Failed</span>;
+      }
+      return <span className="capitalize">{v}</span>;
+    } },
     { key: 'created_at', title: 'Uploaded', render: (v) => <span>{formatDate(v)}</span> },
     {
       key: 'actions',

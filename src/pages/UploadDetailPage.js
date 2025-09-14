@@ -39,7 +39,18 @@ export default function UploadDetailPage(){
   }
 
   function selectPage(p){
-    setSelected(p);
+    // Defensive normalization: ensure blob_url is a safe, loadable URL.
+    const normalized = { ...p };
+    if (normalized.blob_url) {
+      // If blob_url is a full URL (http/https) leave it.
+      if (!/^https?:\/\//i.test(normalized.blob_url)) {
+        // If it already starts with a slash, keep it; otherwise prefix a slash.
+        if (!normalized.blob_url.startsWith('/')) {
+          normalized.blob_url = '/' + normalized.blob_url;
+        }
+      }
+    }
+    setSelected(normalized);
     setOcrText(p.ocr_text || '');
   }
 
@@ -90,7 +101,7 @@ export default function UploadDetailPage(){
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3 max-h-[60vh] overflow-auto">
               {pages.map(p => (
                 <button key={p.id} onClick={() => selectPage(p)} className={`border rounded-md overflow-hidden focus:outline-none focus:ring-2 focus:ring-indigo-500 ${selected && selected.id === p.id ? 'ring-2 ring-indigo-500' : ''}`}>
-                  <img src={p.blob_url} alt="page" className="w-full h-24 object-cover" />
+                  <img src={(p.blob_url && (/^https?:\/\//i.test(p.blob_url) ? p.blob_url : (p.blob_url.startsWith('/') ? p.blob_url : '/' + p.blob_url))) || ''} alt="page" className="w-full h-24 object-cover" />
                 </button>
               ))}
             </div>
