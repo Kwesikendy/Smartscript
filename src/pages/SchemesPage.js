@@ -157,6 +157,7 @@ export default function SchemesPage() {
       const payload = {
         name: editModal.scheme.name,
         scheme_text: editModal.scheme.scheme_text,
+        custom_instructions: editModal.scheme.custom_instructions || '',
         has_math: editModal.scheme.has_math,
         group_ids: (editModal.scheme.groups || []).map(g => g.id),
         questions: editModal.scheme.questions || {}
@@ -530,6 +531,14 @@ export default function SchemesPage() {
             </div>
           </div>
           <div>
+            <div className="text-sm font-medium text-gray-700 mb-1">Custom Instructions</div>
+            {viewModal.scheme?.custom_instructions ? (
+              <pre className="whitespace-pre-wrap text-sm bg-gray-50 p-3 rounded border border-gray-200 max-h-40 overflow-auto">{viewModal.scheme.custom_instructions}</pre>
+            ) : (
+              <span className="text-sm text-gray-500 italic">No custom instructions</span>
+            )}
+          </div>
+          <div>
             <div className="text-sm font-medium text-gray-700 mb-1">Scheme Text</div>
             <pre className="whitespace-pre-wrap text-sm bg-gray-50 p-3 rounded border border-gray-200 max-h-80 overflow-auto">{viewModal.scheme?.scheme_text}</pre>
           </div>
@@ -573,6 +582,16 @@ export default function SchemesPage() {
                 setEditModal(prev => ({ ...prev, scheme: { ...prev.scheme, groups: selectedGroups } }));
               }}
               classNamePrefix="react-select"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Custom Instructions</label>
+            <textarea
+              rows={3}
+              value={editModal.scheme?.custom_instructions || ''}
+              onChange={(e) => setEditModal(prev => ({ ...prev, scheme: { ...prev.scheme, custom_instructions: e.target.value } }))}
+              placeholder="Enter any additional instructions for the AI when marking papers (optional)..."
+              className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm"
             />
           </div>
           <div>

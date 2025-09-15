@@ -50,7 +50,7 @@ const ToastContainer = ({ toasts, removeToast }) => {
   if (toasts.length === 0) return null;
 
   return (
-    <div className="fixed top-4 right-4 z-50 space-y-2">
+    <div className="fixed top-4 left-4 right-4 sm:left-auto sm:right-4 z-50 space-y-2 max-w-sm sm:max-w-xs md:max-w-sm lg:max-w-md xl:max-w-lg sm:w-auto">
       {toasts.map(toast => (
         <Toast key={toast.id} toast={toast} onRemove={removeToast} />
       ))}
@@ -80,22 +80,22 @@ const Toast = ({ toast, onRemove }) => {
   };
 
   return (
-    <div className={`max-w-sm w-full ${getColorClasses()} border rounded-lg shadow-lg p-4 animate-in slide-in-from-right duration-300`}>
+    <div className={`w-full ${getColorClasses()} border rounded-lg shadow-lg p-3 sm:p-4 animate-in slide-in-from-right duration-300`}>
       <div className="flex items-start">
         <div className="flex-shrink-0">
           {getIcon()}
         </div>
-        <div className="ml-3 w-0 flex-1">
-          <p className="text-sm font-medium text-gray-900">
+        <div className="ml-2 sm:ml-3 flex-1 min-w-0">
+          <p className="text-sm font-medium text-gray-900 break-words">
             {message}
           </p>
         </div>
-        <div className="ml-4 flex-shrink-0 flex">
+        <div className="ml-2 sm:ml-4 flex-shrink-0">
           <button
-            className="bg-transparent rounded-md inline-flex text-gray-400 hover:text-gray-600 focus:outline-none"
+            className="bg-transparent rounded-md inline-flex text-gray-400 hover:text-gray-600 focus:outline-none p-1"
             onClick={() => onRemove(id)}
           >
-            <X className="h-4 w-4" />
+            <X className="h-3 w-3 sm:h-4 sm:w-4" />
           </button>
         </div>
       </div>

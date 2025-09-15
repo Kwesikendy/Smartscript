@@ -19,6 +19,7 @@ export default function UploadScheme() {
     name: '',
     upload_type: 'text',
     scheme_text: '',
+    custom_instructions: '',
     has_math: false,
     group_ids: [],
     questions: {}
@@ -116,6 +117,7 @@ export default function UploadScheme() {
       const payload = {
         name: formData.name.trim(),
         scheme_text: schemeText,
+        custom_instructions: formData.custom_instructions.trim(),
         has_math: formData.has_math,
         group_ids: formData.group_ids,
         questions: {
@@ -131,6 +133,7 @@ export default function UploadScheme() {
         name: '',
         upload_type: 'text',
         scheme_text: '',
+        custom_instructions: '',
         has_math: false,
         group_ids: [],
         questions: {},
@@ -253,6 +256,20 @@ export default function UploadScheme() {
                   </div>
                 </label>
               </div>
+            </div>
+
+            <div>
+              <label htmlFor="custom_instructions" className="block text-sm font-medium text-gray-700 mb-2">Custom Instructions for LLM</label>
+              <textarea
+                id="custom_instructions"
+                name="custom_instructions"
+                value={formData.custom_instructions}
+                onChange={handleInputChange}
+                rows={3}
+                placeholder="Enter any additional instructions for the AI when marking papers (optional)..."
+                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm"
+              />
+              <p className="text-xs text-gray-500 mt-1">These instructions will guide the AI when marking papers using this scheme</p>
             </div>
 
             <div className="flex items-center">

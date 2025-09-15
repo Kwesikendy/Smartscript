@@ -1,16 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { ArrowLeft, CheckSquare, Save, SkipForward, AlertCircle, FileText, User } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowLeft, CheckSquare, Save, SkipForward, AlertCircle, FileText, User, Zap, RefreshCw, Bot, Clock, Target } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import LoadingOverlay from '../components/LoadingOverlay';
+import LoadingProgressBar from '../components/LoadingProgressBar';
+import LoadingSpinner from '../components/LoadingSpinner';
 import Alert from '../components/Alert';
+import { useToast } from '../components/ToastProvider';
 import api from '../api/axios';
 
 export default function MarkingPage() {
   const { uploadId, candidateId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { addToast } = useToast();
   
   const [upload, setUpload] = useState(null);
   const [candidate, setCandidate] = useState(null);
@@ -19,9 +23,18 @@ export default function MarkingPage() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
   const [autoSave, setAutoSave] = useState(true);
+  
+  // LLM-related state
+  const [aiMarking, setAiMarking] = useState(false);
+  const [aiProgress, setAiProgress] = useState(0);
+  const [aiStatus, setAiStatus] = useState('');
+  const [aiResults, setAiResults] = useState({});
+  const [markingJob, setMarkingJob] = useState(null);
+  
+  // Background process state
+  const [backgroundProcesses, setBackgroundProcesses] = useState([]);
+  const pollingInterval = useRef(null);
 
   useEffect(() => {
     fetchMarkingData();
@@ -35,6 +48,56 @@ export default function MarkingPage() {
       return () => clearTimeout(saveTimer);
     }
   }, [marks, autoSave]);
+
+  // Start polling for background processes when marking job is active
+  useEffect(() => {
+    if (markingJob) {
+      startPolling();
+    } else {
+      stopPolling();
+    }
+    return () => stopPolling();
+  }, [markingJob]);
+
+  const startPolling = () => {
+    pollingInterval.current = setInterval(async () => {
+      await checkMarkingProgress();
+    }, 2000); // Poll every 2 seconds
+  };
+
+  const stopPolling = () => {
+    if (pollingInterval.current) {
+      clearInterval(pollingInterval.current);
+      pollingInterval.current = null;
+    }
+  };
+
+  const checkMarkingProgress = async () => {
+    if (!markingJob) return;
+    
+    try {
+      const response = await api.get(`/marking-jobs/${markingJob.id}/status`);
+      const job = response.data;
+      
+      setAiProgress(job.progress || 0);
+      setAiStatus(job.status_message || '');
+      
+      if (job.status === 'completed') {
+        setAiResults(job.results || {});
+        setMarkingJob(null);
+        setAiMarking(false);
+        addToast('success', 'AI Marking Complete', 'All scripts have been automatically marked by AI');
+        // Refresh marks to get AI results
+        await fetchMarkingData();
+      } else if (job.status === 'failed') {
+        setMarkingJob(null);
+        setAiMarking(false);
+        addToast('error', 'AI Marking Failed', job.error_message || 'Please try again or mark manually');
+      }
+    } catch (err) {
+      console.error('Polling error:', err);
+    }
+  };
 
   const fetchMarkingData = async () => {
     try {
@@ -79,11 +142,10 @@ export default function MarkingPage() {
       });
       
       if (showMessage) {
-        setSuccess('Marks saved successfully');
+        addToast('success', 'Marks saved successfully', 'Your progress has been saved to the database');
       }
-      setError(null);
     } catch (err) {
-      setError('Failed to save marks');
+      addToast('error', 'Failed to save marks', err.response?.data?.message || 'Please try again');
       console.error('Save marks error:', err);
     } finally {
       setSaving(false);
@@ -126,14 +188,36 @@ export default function MarkingPage() {
     }
   };
 
+  const handleAIMarking = async () => {
+    try {
+      setAiMarking(true);
+      setAiProgress(0);
+      setAiStatus('Initiating AI marking process...');
+      
+      addToast('info', 'AI Marking Started', 'Your scripts are being marked automatically in the background');
+      
+      const response = await api.post(`/uploads/${uploadId}/candidates/${candidateId}/marking-jobs/start`, {
+        marking_scheme_id: upload?.marking_scheme_id,
+        include_custom_instructions: true
+      });
+      
+      setMarkingJob(response.data.job);
+      setAiStatus('AI is analyzing the scripts...');
+    } catch (err) {
+      setAiMarking(false);
+      addToast('error', 'AI Marking Failed', err.response?.data?.message || 'Please try again or mark manually');
+      console.error('AI marking error:', err);
+    }
+  };
+
   const handleCompleteMarking = async () => {
     try {
       await handleSaveMarks(false);
       await api.post(`/uploads/${uploadId}/candidates/${candidateId}/complete`);
-      setSuccess('Marking completed successfully');
+      addToast('success', 'Marking completed successfully', 'The candidate has been fully marked');
       navigate(`/uploads/${uploadId}/results`);
     } catch (err) {
-      setError('Failed to complete marking');
+      addToast('error', 'Failed to complete marking', err.response?.data?.message || 'Please try again');
       console.error('Complete marking error:', err);
     }
   };
@@ -252,24 +336,33 @@ export default function MarkingPage() {
           </motion.div>
         </div>
 
-        {/* Error/Success Alerts */}
-        {error && (
-          <Alert
-            type="error"
-            message={error}
-            onClose={() => setError(null)}
-            className="mb-6"
-          />
-        )}
-        
-        {success && (
-          <Alert
-            type="success"
-            message={success}
-            onClose={() => setSuccess(null)}
-            className="mb-6"
-          />
-        )}
+        {/* AI Marking Progress */}
+        <AnimatePresence>
+          {aiMarking && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg shadow-sm border border-blue-200 p-6 mb-6"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center">
+                  <Bot className="h-6 w-6 text-blue-600 mr-3" />
+                  <div>
+                    <h3 className="text-lg font-medium text-blue-900">AI Marking in Progress</h3>
+                    <p className="text-sm text-blue-700">{aiStatus}</p>
+                  </div>
+                </div>
+                <div className="flex items-center">
+                  <LoadingSpinner size="sm" className="mr-2" />
+                  <span className="text-sm font-medium text-blue-900">{Math.round(aiProgress)}%</span>
+                </div>
+              </div>
+              <LoadingProgressBar progress={aiProgress} className="mb-2" />
+              <p className="text-xs text-blue-600">You can continue browsing while AI marks your scripts in the background</p>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Main Marking Interface */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -370,22 +463,70 @@ export default function MarkingPage() {
                 </div>
               </div>
 
+              {/* AI Suggestions */}
+              {aiResults[currentQuestion?.id] && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mb-6 bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-lg border border-blue-200"
+                >
+                  <div className="flex items-center mb-3">
+                    <Bot className="h-5 w-5 text-blue-600 mr-2" />
+                    <h3 className="font-medium text-blue-900">AI Suggestions</h3>
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="text-blue-800">Suggested Score:</span>
+                      <span className="font-medium text-blue-900">
+                        {aiResults[currentQuestion.id].suggested_score} / {currentQuestion?.max_marks || 0}
+                      </span>
+                    </div>
+                    {aiResults[currentQuestion.id].reasoning && (
+                      <div>
+                        <span className="text-blue-800">AI Reasoning:</span>
+                        <p className="text-blue-700 mt-1 italic">
+                          {aiResults[currentQuestion.id].reasoning}
+                        </p>
+                      </div>
+                    )}
+                    <button
+                      onClick={() => {
+                        handleMarkChange(currentQuestion.id, aiResults[currentQuestion.id].suggested_score);
+                        if (aiResults[currentQuestion.id].comment) {
+                          handleCommentChange(currentQuestion.id, aiResults[currentQuestion.id].comment);
+                        }
+                      }}
+                      className="mt-2 text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition-colors"
+                    >
+                      Accept AI Suggestion
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+
               {/* Marking Input */}
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Marks (out of {currentQuestion?.max_marks || 0})
                   </label>
-                  <input
-                    type="number"
-                    min="0"
-                    max={currentQuestion?.max_marks || 0}
-                    step="0.5"
-                    value={currentMark.score || ''}
-                    onChange={(e) => handleMarkChange(currentQuestion?.id, e.target.value)}
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                    placeholder="Enter marks"
-                  />
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min="0"
+                      max={currentQuestion?.max_marks || 0}
+                      step="0.5"
+                      value={currentMark.score || ''}
+                      onChange={(e) => handleMarkChange(currentQuestion?.id, e.target.value)}
+                      className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                      placeholder="Enter marks"
+                    />
+                    {currentMark.score && (
+                      <div className="absolute right-3 top-2 text-xs text-gray-500">
+                        {Math.round((currentMark.score / (currentQuestion?.max_marks || 1)) * 100)}%
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div>
@@ -401,20 +542,41 @@ export default function MarkingPage() {
                   />
                 </div>
 
-                {/* Auto-save indicator */}
-                <div className="flex items-center justify-between text-sm text-gray-500">
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={autoSave}
-                      onChange={(e) => setAutoSave(e.target.checked)}
-                      className="mr-2"
-                    />
-                    Auto-save enabled
+                {/* Enhanced status indicators */}
+                <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center space-x-4">
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={autoSave}
+                        onChange={(e) => setAutoSave(e.target.checked)}
+                        className="mr-2 h-4 w-4 text-indigo-600 border-gray-300 rounded"
+                      />
+                      <span className="text-gray-700">Auto-save enabled</span>
+                    </div>
+                    {currentMark.marked_at && (
+                      <div className="flex items-center text-green-600">
+                        <Target className="h-4 w-4 mr-1" />
+                        <span>Marked</span>
+                      </div>
+                    )}
                   </div>
-                  {saving && (
-                    <span className="text-blue-600">Saving...</span>
-                  )}
+                  <div className="flex items-center space-x-2">
+                    {saving && (
+                      <div className="flex items-center text-blue-600">
+                        <LoadingSpinner size="xs" className="mr-1" />
+                        <span>Saving...</span>
+                      </div>
+                    )}
+                    {currentMark.marked_at && (
+                      <div className="flex items-center text-gray-500">
+                        <Clock className="h-4 w-4 mr-1" />
+                        <span className="text-xs">
+                          {new Date(currentMark.marked_at).toLocaleTimeString()}
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -428,18 +590,47 @@ export default function MarkingPage() {
           transition={{ duration: 0.5, delay: 0.4 }}
           className="flex flex-wrap gap-4 mt-8 justify-center"
         >
+          {/* AI Marking Button */}
+          <button
+            onClick={handleAIMarking}
+            disabled={aiMarking || !candidate?.answers}
+            className="inline-flex items-center px-6 py-3 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {aiMarking ? (
+              <>
+                <LoadingSpinner size="sm" className="-ml-1 mr-2" />
+                AI Marking...
+              </>
+            ) : (
+              <>
+                <Zap className="-ml-1 mr-2 h-5 w-5" />
+                AI Mark All
+              </>
+            )}
+          </button>
+
+          {/* Save Button with visual feedback */}
           <button
             onClick={() => handleSaveMarks(true)}
             disabled={saving}
-            className="inline-flex items-center px-6 py-3 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center px-6 py-3 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
           >
-            <Save className="-ml-1 mr-2 h-5 w-5" />
-            Save Progress
+            {saving ? (
+              <>
+                <LoadingSpinner size="sm" className="-ml-1 mr-2" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <Save className="-ml-1 mr-2 h-5 w-5" />
+                Save Progress
+              </>
+            )}
           </button>
           
           <button
             onClick={handleCompleteMarking}
-            className="inline-flex items-center px-6 py-3 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+            className="inline-flex items-center px-6 py-3 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200"
           >
             <CheckSquare className="-ml-1 mr-2 h-5 w-5" />
             Complete Marking
@@ -447,7 +638,7 @@ export default function MarkingPage() {
           
           <button
             onClick={handleSkipCandidate}
-            className="inline-flex items-center px-6 py-3 border border-gray-300 rounded-md shadow-sm text-base font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            className="inline-flex items-center px-6 py-3 border border-gray-300 rounded-md shadow-sm text-base font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200"
           >
             <SkipForward className="-ml-1 mr-2 h-5 w-5" />
             Skip & Mark Later

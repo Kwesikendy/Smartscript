@@ -10,6 +10,11 @@ import {
 } from 'lucide-react';
 
 const StatusBadge = ({ status, type = 'general', className = '' }) => {
+  // Debug logging - remove in production
+  if (process.env.NODE_ENV === 'development') {
+    console.log('StatusBadge:', { status, type, className });
+  }
+  
   const getStatusConfig = (status, type) => {
     // Upload Status
     if (type === 'upload') {
@@ -23,6 +28,7 @@ const StatusBadge = ({ status, type = 'general', className = '' }) => {
             iconColor: 'text-gray-500'
           };
         case 'uploading':
+        case 'processing': // Handle both 'uploading' and 'processing' for upload status
           return {
             icon: Loader2,
             text: 'Uploading...',
@@ -50,7 +56,7 @@ const StatusBadge = ({ status, type = 'general', className = '' }) => {
         default:
           return {
             icon: AlertCircle,
-            text: 'Unknown Status',
+            text: status ? `Upload ${status}` : 'Upload Status Unknown',
             bgColor: 'bg-gray-100',
             textColor: 'text-gray-700',
             iconColor: 'text-gray-500'
@@ -97,7 +103,7 @@ const StatusBadge = ({ status, type = 'general', className = '' }) => {
         default:
           return {
             icon: AlertCircle,
-            text: 'Unknown Status',
+            text: status ? `OCR ${status}` : 'OCR Status Unknown',
             bgColor: 'bg-gray-100',
             textColor: 'text-gray-700',
             iconColor: 'text-gray-500'
@@ -151,7 +157,7 @@ const StatusBadge = ({ status, type = 'general', className = '' }) => {
       default:
         return {
           icon: AlertCircle,
-          text: status || 'Unknown',
+          text: status ? status.charAt(0).toUpperCase() + status.slice(1) : 'Status Unknown',
           bgColor: 'bg-gray-100',
           textColor: 'text-gray-700',
           iconColor: 'text-gray-500'

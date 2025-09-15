@@ -105,10 +105,12 @@ export default function UploadDetailPage(){
             <h1 className="text-2xl font-bold text-gray-900">Upload Detail</h1>
             <p className="text-gray-600">View page images and OCR text, edit text or redo OCR.</p>
             {upload && (
-              <div className="mt-2 flex items-center space-x-4">
+              <div className="mt-2 flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
                 <span className="text-sm text-gray-500">File: {upload.original_filename || upload.filename}</span>
-                <StatusBadge status={upload.upload_status || upload.status} type="upload" />
-                {upload.ocr_status && <StatusBadge status={upload.ocr_status} type="ocr" />}
+                <div className="flex items-center space-x-2">
+                  <StatusBadge status={upload.upload_status || upload.status} type="upload" />
+                  <StatusBadge status={upload.ocr_status || 'pending'} type="ocr" />
+                </div>
               </div>
             )}
           </div>
