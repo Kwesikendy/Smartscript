@@ -12,12 +12,26 @@ export default function MarkingGroupsPage() {
   const [error, setError] = useState(null);
   const [selected, setSelected] = useState({});
   const [bulkBusy, setBulkBusy] = useState(false);
+  const [autoRefresh, setAutoRefresh] = useState(false);
 
   const selectedIds = useMemo(() => Object.keys(selected).filter(k => selected[k]), [selected]);
 
   useEffect(() => {
     fetchData();
   }, []);
+
+  // Auto-refresh every 3 seconds when there are processing groups
+  useEffect(() => {
+    let interval;
+    if (autoRefresh || rows.some(row => row.status === 'processing')) {
+      interval = setInterval(() => {
+        fetchData();
+      }, 3000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [autoRefresh, rows]);
 
   const fetchData = async () => {
     try {
@@ -47,11 +61,24 @@ export default function MarkingGroupsPage() {
     if (!ids || ids.length === 0) return;
     try {
       setBulkBusy(true);
-      await api.post('/marking-groups/start', { group_ids: ids });
+      setError(null);
+      const response = await api.post('/marking-groups/start', { group_ids: ids });
+      console.log('Marking started:', response.data);
+      
+      // Enable auto-refresh to track progress
+      setAutoRefresh(true);
+      
+      // Fetch initial updated data
       await fetchData();
+      
+      // Show success message with job count
+      if (response.data?.enqueued) {
+        setError(null); // Clear any previous errors
+        // Could add a success toast here if you have a toast system
+      }
     } catch (err) {
       console.error('Failed to start marking:', err);
-      setError('Failed to start marking');
+      setError('Failed to start marking: ' + (err.response?.data || err.message));
     } finally {
       setBulkBusy(false);
     }
@@ -77,6 +104,15 @@ export default function MarkingGroupsPage() {
             <p className="text-sm text-gray-600">Control and monitor marking per group</p>
           </div>
           <div className="flex items-center gap-2">
+            <label className="inline-flex items-center gap-2 px-3 py-2 text-sm rounded-md bg-white border border-gray-300 hover:bg-gray-50 cursor-pointer">
+              <input 
+                type="checkbox" 
+                checked={autoRefresh} 
+                onChange={(e) => setAutoRefresh(e.target.checked)}
+                className="w-4 h-4"
+              />
+              Auto-refresh
+            </label>
             <button onClick={fetchData} className="inline-flex items-center gap-2 px-3 py-2 text-sm rounded-md bg-white border border-gray-300 hover:bg-gray-50">
               <RefreshCw className="w-4 h-4"/> Refresh
             </button>
