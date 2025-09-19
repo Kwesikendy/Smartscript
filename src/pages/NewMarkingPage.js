@@ -1,12 +1,30 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, CheckCircle, Circle, Loader2, Upload, AlertTriangle, RefreshCw, ChevronRight, Users, FileText } from 'lucide-react';
+import { 
+  Play, 
+  CheckCircle, 
+  Circle, 
+  Loader2, 
+  Upload, 
+  AlertTriangle, 
+  RefreshCw, 
+  ChevronRight, 
+  BarChart3,
+  Users,
+  FileText,
+  Clock,
+  Target,
+  Zap,
+  Eye,
+  Trash2,
+  Edit3
+} from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import LoadingOverlay from '../components/LoadingOverlay';
 import Alert from '../components/Alert';
 import DataTable from '../components/DataTable';
-import api from '../api/axios';
-import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '../components/ToastProvider';
+import api from '../api/axios';
 
 // Color coding for different group types and statuses
 const getGroupTypeColor = (groupType) => {
@@ -50,10 +68,11 @@ const getMarkingStatusIcon = (status) => {
   }
 };
 
-export default function MarkingGroupsPage() {
-  const { success, error: showError, info } = useToast();
+export default function NewMarkingPage() {
   const navigate = useNavigate();
-  const [rows, setRows] = useState([]);
+  const { success, error: showError, info } = useToast();
+  
+  const [groups, setGroups] = useState([]);
   const [batches, setBatches] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -64,7 +83,7 @@ export default function MarkingGroupsPage() {
   const [expandedGroups, setExpandedGroups] = useState({});
 
   // Fetch groups data
-  const fetchGroups = async () => {
+  const fetchGroups = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -74,7 +93,7 @@ export default function MarkingGroupsPage() {
       });
       
       const groupsData = response.data.groups || response.data.data || [];
-      setRows(groupsData);
+      setGroups(groupsData);
       
       // Initialize selected groups state
       const initialSelected = {};
@@ -89,10 +108,10 @@ export default function MarkingGroupsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   // Fetch batches for a specific group
-  const fetchBatches = async (groupId) => {
+  const fetchBatches = useCallback(async (groupId) => {
     try {
       const response = await api.get(`/groups/${groupId}/batches`);
       const batchesData = response.data.batches || [];
@@ -114,69 +133,20 @@ export default function MarkingGroupsPage() {
       
     } catch (err) {
       console.error('Failed to fetch batches:', err);
+      showError(`Failed to load batches for group ${groupId}`);
     }
-  };
+  }, [showError]);
 
   useEffect(() => {
     fetchGroups();
-  }, []);
-
-  // Check marking progress and show completion toasts
-  const checkMarkingProgress = async () => {
-    try {
-      const response = await api.get('/marking-groups/enhanced/progress');
-      
-      // Check if response has the expected structure
-      if (!response.data || !response.data.groups || !Array.isArray(response.data.groups)) {
-        console.warn('Invalid progress response structure:', response.data);
-        return;
-      }
-      
-      const groups = response.data.groups;
-      
-      // Check for completed markings
-      groups.forEach(groupProgress => {
-        const groupId = groupProgress.group_id;
-        if (groupProgress.marking_status === 'success' && markingInProgress[groupId]) {
-          success(`Marking completed successfully for group: ${groupProgress.group_name}`);
-          setMarkingInProgress(prev => ({
-            ...prev,
-            [groupId]: false
-          }));
-        } else if (groupProgress.marking_status === 'failed' && markingInProgress[groupId]) {
-          showError(`Marking failed for group: ${groupProgress.group_name}`);
-          setMarkingInProgress(prev => ({
-            ...prev,
-            [groupId]: false
-          }));
-        } else if (groupProgress.marking_status === 'not_started' && markingInProgress[groupId]) {
-          // Check if marking was supposed to start but didn't - likely due to missing marking schemes
-          showError(
-            `Marking could not start for group: ${groupProgress.group_name}.`,
-            8000,
-            {
-              label: 'Configure Marking Schemes',
-              onClick: () => navigate('/schemes')
-            }
-          );
-          setMarkingInProgress(prev => ({
-            ...prev,
-            [groupId]: false
-          }));
-        }
-      });
-    } catch (err) {
-      console.error('Failed to check marking progress:', err);
-    }
-  };
+  }, [fetchGroups]);
 
   // Auto-refresh when marking is in progress
   useEffect(() => {
     let interval;
     if (autoRefresh || Object.values(markingInProgress).some(status => status)) {
-      interval = setInterval(async () => {
-        await fetchGroups();
-        await checkMarkingProgress();
+      interval = setInterval(() => {
+        fetchGroups();
         // Refresh batches for expanded groups
         Object.keys(expandedGroups).forEach(groupId => {
           if (expandedGroups[groupId]) {
@@ -188,26 +158,26 @@ export default function MarkingGroupsPage() {
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [autoRefresh, markingInProgress, expandedGroups]);
+  }, [autoRefresh, markingInProgress, expandedGroups, fetchGroups, fetchBatches]);
 
   // Toggle group selection
-  // const toggleGroupSelection = (groupId) => {
-  //   setSelectedGroups(prev => ({
-  //     ...prev,
-  //     [groupId]: !prev[groupId]
-  //   }));
-  // };
+  const toggleGroupSelection = (groupId) => {
+    setSelectedGroups(prev => ({
+      ...prev,
+      [groupId]: !prev[groupId]
+    }));
+  };
 
   // Toggle batch selection
-  // const toggleBatchSelection = (groupId, batchName) => {
-  //   setSelectedBatches(prev => ({
-  //     ...prev,
-  //     [groupId]: {
-  //       ...prev[groupId],
-  //       [batchName]: !prev[groupId]?.[batchName]
-  //     }
-  //   }));
-  // };
+  const toggleBatchSelection = (groupId, batchName) => {
+    setSelectedBatches(prev => ({
+      ...prev,
+      [groupId]: {
+        ...prev[groupId],
+        [batchName]: !prev[groupId]?.[batchName]
+      }
+    }));
+  };
 
   // Toggle group expansion
   const toggleGroupExpansion = async (groupId) => {
@@ -230,7 +200,6 @@ export default function MarkingGroupsPage() {
     
     try {
       setError(null);
-      info(`Starting marking for ${groupIds.length} group(s)...`);
       
       // Update marking progress state
       groupIds.forEach(groupId => {
@@ -240,11 +209,11 @@ export default function MarkingGroupsPage() {
         }));
       });
       
-      await api.post('/marking-groups/enhanced/start', { 
+      const response = await api.post('/marking-groups/start', { 
         group_ids: groupIds 
       });
       
-      success(`Marking started successfully for ${groupIds.length} group(s). The process is running in the background.`);
+      success(`Marking started for ${groupIds.length} group(s)`);
       
       // Enable auto-refresh
       setAutoRefresh(true);
@@ -252,33 +221,9 @@ export default function MarkingGroupsPage() {
       // Refresh data
       await fetchGroups();
       
-      // Check for immediate failures after a short delay
-      setTimeout(async () => {
-        await checkMarkingProgress();
-      }, 2000);
-      
     } catch (err) {
       console.error('Failed to start marking:', err);
-      let errorMessage = 'Failed to start marking: ' + (err.response?.data?.message || err.message);
-      
-      // Handle specific error cases with action buttons
-      let actionButton = null;
-      if (err.response?.data?.message?.includes('no marking schemes configured')) {
-        errorMessage = 'No marking schemes are configured for the selected groups.';
-        actionButton = {
-          label: 'Create Marking Schemes',
-          onClick: () => navigate('/schemes')
-        };
-      } else if (err.response?.data?.message?.includes('No scripts found')) {
-        errorMessage = 'No scripts found in the selected groups.';
-        actionButton = {
-          label: 'Upload Scripts',
-          onClick: () => navigate('/uploads')
-        };
-      }
-      
-      setError(errorMessage);
-      showError(errorMessage, 8000, actionButton);
+      showError('Failed to start marking: ' + (err.response?.data?.message || err.message));
       
       // Reset marking progress state
       groupIds.forEach(groupId => {
@@ -296,14 +241,13 @@ export default function MarkingGroupsPage() {
     
     try {
       setError(null);
-      info(`Starting marking for ${batchNames.length} batch(es)...`);
       
-      await api.post('/marking-batches/start', {
+      const response = await api.post('/marking-batches/start', {
         group_id: groupId,
         batch_names: batchNames
       });
       
-      success(`Marking started successfully for ${batchNames.length} batch(es). The process is running in the background.`);
+      success(`Marking started for ${batchNames.length} batch(es)`);
       
       // Enable auto-refresh
       setAutoRefresh(true);
@@ -314,26 +258,7 @@ export default function MarkingGroupsPage() {
       
     } catch (err) {
       console.error('Failed to start batch marking:', err);
-      let errorMessage = 'Failed to start batch marking: ' + (err.response?.data?.message || err.message);
-      
-      // Handle specific error cases with action buttons
-      let actionButton = null;
-      if (err.response?.data?.message?.includes('no marking schemes configured')) {
-        errorMessage = 'No marking schemes are configured for the selected batches.';
-        actionButton = {
-          label: 'Create Marking Schemes',
-          onClick: () => navigate('/schemes')
-        };
-      } else if (err.response?.data?.message?.includes('No scripts found')) {
-        errorMessage = 'No scripts found in the selected batches.';
-        actionButton = {
-          label: 'Upload Scripts',
-          onClick: () => navigate('/uploads')
-        };
-      }
-      
-      setError(errorMessage);
-      showError(errorMessage, 8000, actionButton);
+      showError('Failed to start batch marking: ' + (err.response?.data?.message || err.message));
     }
   };
 
@@ -417,7 +342,7 @@ export default function MarkingGroupsPage() {
               onClick={() => toggleGroupExpansion(row.id)}
               className="inline-flex items-center px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
             >
-              <Users className="h-4 w-4 mr-1" />
+              <Eye className="h-4 w-4 mr-1" />
               View Batches
             </button>
           ) : (
@@ -435,13 +360,13 @@ export default function MarkingGroupsPage() {
             </button>
           )}
           
-          <Link
-            to={`/uploads/group/${row.id}`}
+          <button
+            onClick={() => navigate(`/uploads/group/${row.id}`)}
             className="inline-flex items-center px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
           >
             <Upload className="h-4 w-4 mr-1" />
             Uploads
-          </Link>
+          </button>
         </div>
       )
     }
@@ -500,13 +425,13 @@ export default function MarkingGroupsPage() {
             Mark
           </button>
           
-          <Link
-            to={`/uploads/group/${row.groupId}/batch/${encodeURIComponent(row.batchName)}`}
+          <button
+            onClick={() => navigate(`/uploads/group/${row.groupId}/batch/${encodeURIComponent(row.batchName)}`)}
             className="inline-flex items-center px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
           >
-            <Users className="h-4 w-4 mr-1" />
+            <Eye className="h-4 w-4 mr-1" />
             View
-          </Link>
+          </button>
         </div>
       )
     }
@@ -587,7 +512,7 @@ export default function MarkingGroupsPage() {
           </div>
           
           <DataTable
-            data={rows}
+            data={groups}
             columns={groupColumns}
             loading={loading}
             onRowClick={(row) => {
@@ -605,7 +530,7 @@ export default function MarkingGroupsPage() {
           {Object.entries(expandedGroups).map(([groupId, isExpanded]) => {
             if (!isExpanded || !batches[groupId]) return null;
             
-            const group = rows.find(g => g.id === groupId);
+            const group = groups.find(g => g.id === groupId);
             if (!group) return null;
             
             return (

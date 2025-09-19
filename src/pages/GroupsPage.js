@@ -19,7 +19,7 @@ export default function GroupsPage() {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [deleteModal, setDeleteModal] = useState({ open: false, group: null });
-  const [formModal, setFormModal] = useState({ open: false, mode: 'create', group: null, name: '', description: '', has_math: false });
+  const [formModal, setFormModal] = useState({ open: false, mode: 'create', group: null, name: '', description: '', has_math: false, group_type: 'simple' });
   const [pagination, setPagination] = useState({
     page: 1,
     per_page: 10,
@@ -72,11 +72,11 @@ export default function GroupsPage() {
   };
 
   const handleOpenCreate = () => {
-    setFormModal({ open: true, mode: 'create', group: null, name: '', description: '', has_math: false });
+    setFormModal({ open: true, mode: 'create', group: null, name: '', description: '', has_math: false, group_type: 'simple' });
   };
 
   const handleOpenEdit = (group) => {
-    setFormModal({ open: true, mode: 'edit', group, name: group.name, description: group.description || '', has_math: !!group.has_math });
+    setFormModal({ open: true, mode: 'edit', group, name: group.name, description: group.description || '', has_math: !!group.has_math, group_type: group.group_type || 'simple' });
   };
 
   const handleDeleteGroup = async (group) => {
@@ -98,7 +98,7 @@ export default function GroupsPage() {
   const handleSubmitGroup = async (e) => {
     e.preventDefault();
     try {
-  const payload = { name: formModal.name.trim(), description: formModal.description.trim(), has_math: !!formModal.has_math };
+  const payload = { name: formModal.name.trim(), description: formModal.description.trim(), has_math: !!formModal.has_math, group_type: formModal.group_type };
       if (!payload.name) {
         setError('Group name is required.');
         return;
@@ -108,7 +108,7 @@ export default function GroupsPage() {
       } else if (formModal.mode === 'edit' && formModal.group) {
         await api.put(`/groups/${formModal.group.id}`, payload);
       }
-  setFormModal({ open: false, mode: 'create', group: null, name: '', description: '', has_math: false });
+  setFormModal({ open: false, mode: 'create', group: null, name: '', description: '', has_math: false, group_type: 'simple' });
       await fetchGroups();
       await fetchStats();
       setError(null);
@@ -144,6 +144,16 @@ export default function GroupsPage() {
             <div className="text-sm text-gray-500">{row.description || 'No description'}</div>
           </div>
         </div>
+      )
+    },
+    {
+      key: 'group_type',
+      title: 'Type',
+      sortable: true,
+      render: (value) => (
+        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${value === 'simple' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'}`}>
+          {value === 'simple' ? 'Individual Scripts' : 'Batch Uploads'}
+        </span>
       )
     },
     {
@@ -381,7 +391,7 @@ export default function GroupsPage() {
       {/* Group Form Modal */}
       <Modal
         isOpen={formModal.open}
-  onClose={() => setFormModal({ open: false, mode: 'create', group: null, name: '', description: '', has_math: false })}
+  onClose={() => setFormModal({ open: false, mode: 'create', group: null, name: '', description: '', has_math: false, group_type: 'simple' })}
         title={formModal.mode === 'create' ? 'New Group' : 'Edit Group'}
       >
         <form onSubmit={handleSubmitGroup} className="p-6 space-y-4">
@@ -395,6 +405,24 @@ export default function GroupsPage() {
               placeholder="e.g. Mathematics 2025"
               required
             />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Group Type</label>
+            <select
+              value={formModal.group_type}
+              onChange={(e) => setFormModal(prev => ({ ...prev, group_type: e.target.value }))}
+              className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              required
+            >
+              <option value="simple">Individual Scripts - Show each uploaded image separately</option>
+              <option value="batch">Batch Uploads - Group multiple uploads together with custom naming</option>
+            </select>
+            <p className="mt-1 text-xs text-gray-500">
+              {formModal.group_type === 'simple' 
+                ? 'Perfect for individual exam scripts where each image should be visible separately' 
+                : 'Ideal for organizing multiple batches of uploads with custom names like "1st batch", "2nd batch"'
+              }
+            </p>  
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
@@ -422,7 +450,7 @@ export default function GroupsPage() {
             <button type="submit" className="w-full sm:w-auto inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:text-sm">
               {formModal.mode === 'create' ? 'Create' : 'Save changes'}
             </button>
-            <button type="button" onClick={() => setFormModal({ open: false, mode: 'create', group: null, name: '', description: '', has_math: false })} className="mt-3 w-full sm:w-auto inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:text-sm">
+            <button type="button" onClick={() => setFormModal({ open: false, mode: 'create', group: null, name: '', description: '', has_math: false, group_type: 'simple' })} className="mt-3 w-full sm:w-auto inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:text-sm">
               Cancel
             </button>
           </div>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import ToastProvider from './components/ToastProvider';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -9,6 +9,8 @@ import UploadsPage from './pages/UploadsPage';
 import AnomaliesPage from './pages/AnomaliesPage';
 import MarkingGroupsPage from './pages/MarkingGroupsPage';
 import ResultsPage from './pages/ResultsPage';
+import GroupResultsPage from './pages/GroupResultsPage';
+import CandidateResultsPage from './pages/CandidateResultsPage';
 import CandidateDetailPage from './pages/CandidateDetailPage';
 import SchemesPage from './pages/SchemesPage';
 import UploadScheme from './pages/UploadScheme';
@@ -18,6 +20,9 @@ import PricingPage from './pages/PricingPage';
 import LandingPage from './pages/LandingPage';
 import SignupPage from './pages/SignupPage';
 import GroupUploadsPage from './pages/GroupUploadsPage';
+import BatchDetailsPage from './pages/BatchDetailsPage';
+import BatchImageDetailsPage from './pages/BatchImageDetailsPage';
+import SimpleUploadDetailsPage from './pages/SimpleUploadDetailsPage';
 import UploadDetailPage from './pages/UploadDetailPage';
 import './App.css';
 
@@ -35,11 +40,15 @@ export default function App(){
           <Route path="/uploads" element={<ProtectedRoute><UploadsPage /></ProtectedRoute>} />
           <Route path="/uploads/:uploadId" element={<ProtectedRoute><UploadDetailPage /></ProtectedRoute>} />
           <Route path="/uploads/group/:groupId" element={<ProtectedRoute><GroupUploadsPage /></ProtectedRoute>} />
+          <Route path="/uploads/group/:groupId/batch/:batchName" element={<ProtectedRoute><BatchDetailsPage /></ProtectedRoute>} />
+          <Route path="/uploads/group/:groupId/batch/:batchName/image/:pageId" element={<ProtectedRoute><BatchImageDetailsPage /></ProtectedRoute>} />
+          <Route path="/uploads/group/:groupId/upload/:uploadId" element={<ProtectedRoute><SimpleUploadDetailsPage /></ProtectedRoute>} />
           <Route path="/anomalies" element={<ProtectedRoute><AnomaliesPage /></ProtectedRoute>} />
           <Route path="/anomalies/:groupId" element={<ProtectedRoute><AnomaliesPage /></ProtectedRoute>} />
           <Route path="/marking" element={<ProtectedRoute><MarkingGroupsPage /></ProtectedRoute>} />
           <Route path="/results" element={<ProtectedRoute><ResultsPage /></ProtectedRoute>} />
-          <Route path="/results/group/:groupId" element={<ProtectedRoute><ResultsPage /></ProtectedRoute>} />
+          <Route path="/results/group/:groupId" element={<ProtectedRoute><GroupResultsPage /></ProtectedRoute>} />
+          <Route path="/results/candidate/:candidateId" element={<ProtectedRoute><CandidateResultsPage /></ProtectedRoute>} />
           <Route path="/results/candidates/:candidateId" element={<ProtectedRoute><CandidateDetailPage /></ProtectedRoute>} />
           <Route path="/schemes" element={<ProtectedRoute><SchemesPage /></ProtectedRoute>} />
           <Route path="/upload-scheme" element={<ProtectedRoute><UploadScheme /></ProtectedRoute>} />

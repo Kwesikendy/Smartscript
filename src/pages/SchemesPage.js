@@ -219,57 +219,41 @@ export default function SchemesPage() {
       )
     },
     {
-      key: 'group_name',
-      title: 'Group',
+      key: 'groups',
+      title: 'Groups',
       sortable: true,
       render: (value, row) => {
-        // Handle different group data formats
-        let groupName = value;
-        if (!groupName && row.groups && row.groups.length > 0) {
-          groupName = row.groups[0].name;
+        // Get groups from the row data
+        const groups = row.groups || [];
+        
+        if (groups.length === 0) {
+          return (
+            <span className="text-sm text-gray-500">No groups</span>
+          );
         }
+
+        // Show first 4 groups
+        const displayGroups = groups.slice(0, 4);
+        const remainingCount = groups.length - 4;
+
         return (
-          <span className="text-sm text-gray-900">{groupName || 'No group'}</span>
+          <div className="flex flex-wrap gap-1">
+            {displayGroups.map((group, index) => (
+              <span
+                key={group.id || index}
+                className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+              >
+                {group.name}
+              </span>
+            ))}
+            {remainingCount > 0 && (
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                +{remainingCount}
+              </span>
+            )}
+          </div>
         );
       }
-    },
-    {
-      key: 'total_marks',
-      title: 'Total Marks',
-      sortable: true,
-      render: (value, row) => {
-        // Calculate from questions if not provided
-        let totalMarks = value || 0;
-        if (!totalMarks && row.questions && Array.isArray(row.questions)) {
-          totalMarks = row.questions.reduce((sum, q) => sum + (q.marks || 0), 0);
-        }
-        return (
-          <span className="text-sm text-gray-900">{totalMarks}</span>
-        );
-      }
-    },
-    {
-      key: 'question_count',
-      title: 'Questions',
-      sortable: true,
-      render: (value, row) => {
-        // Calculate from questions if not provided
-        let questionCount = value || 0;
-        if (!questionCount && row.questions && Array.isArray(row.questions)) {
-          questionCount = row.questions.length;
-        }
-        return (
-          <span className="text-sm text-gray-900">{questionCount}</span>
-        );
-      }
-    },
-    {
-      key: 'usage_count',
-      title: 'Used In',
-      sortable: true,
-      render: (value) => (
-        <span className="text-sm text-gray-500">{value || 0} uploads</span>
-      )
     },
     {
       key: 'created_at',
